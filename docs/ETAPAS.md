@@ -31,3 +31,9 @@ Evidencia completa: [etapas/01.md](etapas/01.md).
 Modelo relacional completo, constraints e indices
 
 Evidencia completa: [etapas/02.md](etapas/02.md).
+
+## Etapa 03: verificada
+
+Politicas DRF, errores uniformes y throttling
+
+Evidencia completa: [etapas/03.md](etapas/03.md).

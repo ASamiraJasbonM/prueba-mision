@@ -30,6 +30,10 @@ TEMPLATES = [{
 }]
 WSGI_APPLICATION = 'config.wsgi.application'
 DATABASES = {'default': env.db('DATABASE_URL', default=f'sqlite:///{BASE_DIR / "db.sqlite3"}')}
+if DATABASES['default']['ENGINE'] == 'django.db.backends.sqlite3':
+    database_path = Path(DATABASES['default']['NAME'])
+    if not database_path.is_absolute() and str(database_path) != ':memory:':
+        DATABASES['default']['NAME'] = BASE_DIR / database_path
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': f'django.contrib.auth.password_validation.{name}'}
     for name in ['UserAttributeSimilarityValidator', 'MinimumLengthValidator',
@@ -47,7 +51,20 @@ CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
 SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=not DEBUG)
 SESSION_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_SECURE = not DEBUG
-REST_FRAMEWORK = {'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema'}
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_AUTHENTICATION_CLASSES': ['rest_framework_simplejwt.authentication.JWTAuthentication'],
+    'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.IsAuthenticated'],
+    'DEFAULT_PAGINATION_CLASS': 'core.api.Pagination',
+    'PAGE_SIZE': 20,
+    'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend',
+                               'rest_framework.filters.SearchFilter', 'rest_framework.filters.OrderingFilter'],
+    'DEFAULT_THROTTLE_CLASSES': ['rest_framework.throttling.AnonRateThrottle', 'rest_framework.throttling.UserRateThrottle'],
+    'DEFAULT_THROTTLE_RATES': {'user': '100/min', 'anon': '20/min'},
+    'EXCEPTION_HANDLER': 'core.api.exception_handler',
+    'COERCE_DECIMAL_TO_STRING': True,
+    'DATETIME_FORMAT': 'iso-8601',
+}
 SPECTACULAR_SETTINGS = {'TITLE': 'DataPulse Latam API', 'VERSION': '1.0.0'}
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=env.int('JWT_ACCESS_MINUTES', default=15)),

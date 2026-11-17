@@ -26,3 +26,5 @@ Evidencia por etapa en `docs/ETAPAS.md`. El prompt backend del usuario tiene pri
 - Etapa 01: Verificacion efectiva de usuarios desde directorio backend
 
 - Etapa 02: Modelo relacional completo, constraints e indices
+
+- Etapa 03: Politicas DRF, errores uniformes y throttling
