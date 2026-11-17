@@ -55,3 +55,9 @@ Evidencia completa: [etapas/05.md](etapas/05.md).
 IRPC Decimal, alertas y lectura individual
 
 Evidencia completa: [etapas/06.md](etapas/06.md).
+
+## Etapa 07: verificada
+
+Portafolios transaccionales, posiciones y exportacion PDF
+
+Evidencia completa: [etapas/07.md](etapas/07.md).

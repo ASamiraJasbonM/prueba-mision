@@ -8,11 +8,13 @@ from rest_framework.routers import DefaultRouter
 from django.urls import include
 from core.data_api import PaisViewSet
 from core.risk_api import RiesgoViewSet, AlertaViewSet
+from core.portfolio_api import PortafolioViewSet
 
 router = DefaultRouter()
 router.register('paises', PaisViewSet)
 router.register('riesgo', RiesgoViewSet, basename='riesgo')
 router.register('alertas', AlertaViewSet, basename='alerta')
+router.register('portafolios', PortafolioViewSet, basename='portafolio')
 
 urlpatterns = [
     path('api/', include(router.urls)),
