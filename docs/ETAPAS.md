@@ -25,3 +25,9 @@ Evidencia completa: [etapas/01.md](etapas/01.md).
 Verificacion efectiva de usuarios desde directorio backend
 
 Evidencia completa: [etapas/01.md](etapas/01.md).
+
+## Etapa 02: verificada
+
+Modelo relacional completo, constraints e indices
+
+Evidencia completa: [etapas/02.md](etapas/02.md).

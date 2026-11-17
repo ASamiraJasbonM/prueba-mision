@@ -1,6 +1,12 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from .models import Usuario
+from .models import (Moneda, Pais, IndicadorEconomico, TipoCambio, Portafolio,
+                     Posicion, IndiceRiesgo, Alerta, LecturaAlerta, LogActividad)
+
+for model in [Moneda, Pais, IndicadorEconomico, TipoCambio, Portafolio,
+              Posicion, IndiceRiesgo, Alerta, LecturaAlerta, LogActividad]:
+    admin.site.register(model)
 
 
 @admin.register(Usuario)
