@@ -50,7 +50,8 @@ Toda normalización usa Decimal y ROUND_HALF_UP. World Bank PIB y PIB per cápit
 - Datos ausentes omiten la penalización correspondiente, mantienen pesos y marcan `detalle_calculo.parcial/faltantes`. Esto puede sobreestimar el score y nunca debe ocultarse en UI.
 - Se cuenta una vez cada uno de los seis factores con penalización: PIB per cápita, inflación, desempleo, deuda/PIB, balanza y crecimiento PIB. El PDF no define esta función.
 - Discrepancia PDF: inflación 9,2% penaliza 10 según código, pero 25 según ejemplo. Con los tres negativos asumidos por el ejemplo, el IRPC corregido es 75; con la regla explícita anterior hay cinco negativos, estabilidad 70 e IRPC **72**. Las pruebas usan la fórmula, no el 69 erróneo.
-- Umbrales se comparan antes de redondear. Por instrucción transversal del prompt backend, el compuesto se cuantiza a dos decimales HALF_UP **antes de clasificar** (74,995 → 75,00 → BAJO). Esto sustituye la recomendación anterior del plan y la frase contradictoria de etapa 6.
+- El IRPC se calcula en Decimal sin redondeo intermedio. El valor final se cuantiza a 2 decimales ROUND_HALF_UP y se clasifica contra los umbrales 75/50/25 sobre el valor cuantizado.
+- Así se evita mostrar 74.999 como 75.00 en UI mientras la API lo etiqueta MODERADO. La tabla del PDF se interpreta sobre el valor ya presentado al usuario. Los umbrales de penalización de cada indicador se evalúan con su dato de entrada, sin redondearlo para decidir la penalización.
 - Alertas cambiarias usan magnitud absoluta >3%; IRPC crítico al primer cálculo crítico o cruce hacia <25, caída >15 frente al anterior; inflación >50 por país/año/valor, INFO por lote de datos cambiados. Claves naturales de evento deduplican reintentos. Lecturas globales son por usuario.
 - El hash de entradas y fecha UTC evita duplicar recálculos idénticos del mismo día; una fecha nueva conserva histórico diario. Los metadatos de procedencia forman parte del detalle.
 

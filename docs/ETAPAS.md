@@ -79,3 +79,9 @@ Evidencia completa: [etapas/09.md](etapas/09.md).
 Seed completo, regresiones, OpenAPI y documentacion final
 
 Evidencia completa: [etapas/10.md](etapas/10.md).
+
+## Observación P1
+
+Regla canonica de redondeo y bordes de clasificacion
+
+Verificación y salida completa: [observaciones/P1.md](observaciones/P1.md).
