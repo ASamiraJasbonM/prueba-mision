@@ -74,6 +74,7 @@ SIMPLE_JWT = {
 }
 WORLD_BANK_URL = env('WORLD_BANK_URL', default='https://api.worldbank.org/v2')
 EXCHANGE_RATE_URL = env('EXCHANGE_RATE_URL', default='https://open.er-api.com/v6/latest/USD')
-REST_COUNTRIES_URL = env('REST_COUNTRIES_URL', default='https://restcountries.com/v3.1')
+REST_COUNTRIES_URL = env('REST_COUNTRIES_URL', default='https://api.restcountries.com/countries/v5')
+REST_COUNTRIES_API_KEY = env('REST_COUNTRIES_API_KEY', default='')
 EXTERNAL_API_TIMEOUT = env.int('EXTERNAL_API_TIMEOUT', default=10)
 

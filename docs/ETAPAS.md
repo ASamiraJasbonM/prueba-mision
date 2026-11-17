@@ -43,3 +43,9 @@ Evidencia completa: [etapas/03.md](etapas/03.md).
 Autenticacion JWT, perfiles y permisos seguros
 
 Evidencia completa: [etapas/04.md](etapas/04.md).
+
+## Etapa 05: verificada
+
+Paises, indicadores y sincronizacion idempotente con Decimal
+
+Evidencia completa: [etapas/05.md](etapas/05.md).

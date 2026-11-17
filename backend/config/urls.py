@@ -4,8 +4,15 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from core.health import health
 from core.auth_api import RegisterView, LoginView, MeView
 from rest_framework_simplejwt.views import TokenRefreshView
+from rest_framework.routers import DefaultRouter
+from django.urls import include
+from core.data_api import PaisViewSet
+
+router = DefaultRouter()
+router.register('paises', PaisViewSet)
 
 urlpatterns = [
+    path('api/', include(router.urls)),
     path('api/auth/register/', RegisterView.as_view()),
     path('api/auth/login/', LoginView.as_view()),
     path('api/auth/refresh/', TokenRefreshView.as_view()),

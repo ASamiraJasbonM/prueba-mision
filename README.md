@@ -18,6 +18,10 @@ La configuración lee `.env` desde la raíz. `SECRET_KEY` es obligatorio. SQLite
 
 Evidencia por etapa en `docs/ETAPAS.md`. El prompt backend del usuario tiene prioridad sobre decisiones recomendadas de `PLAN_CORREGIDO.md`.
 
+## Base de datos y precisión
+
+PostgreSQL es el motor de referencia para precisión decimal y concurrencia. SQLite solo sirve para demostración local: su afinidad NUMERIC puede perder precisión en valores grandes y `select_for_update()` no bloquea filas. Los campos y toda la lógica de negocio usan Decimal; las garantías de PostgreSQL deben verificarse contra ese motor antes de desplegar. Las pruebas locales no equivalen a una validación de concurrencia real en PostgreSQL.
+
 
 - Etapa 00: Bootstrap, health y OpenAPI base
 
@@ -30,3 +34,5 @@ Evidencia por etapa en `docs/ETAPAS.md`. El prompt backend del usuario tiene pri
 - Etapa 03: Politicas DRF, errores uniformes y throttling
 
 - Etapa 04: Autenticacion JWT, perfiles y permisos seguros
+
+- Etapa 05: Paises, indicadores y sincronizacion idempotente con Decimal
