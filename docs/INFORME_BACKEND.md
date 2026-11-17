@@ -2,9 +2,9 @@
 
 ## Decisiones y alcance
 
-Backend Django 5.2/DRF con todas las operaciones requeridas y extensiones health/OpenAPI/validación de nombre. Implementación secuencial, migraciones generadas por Django, pruebas ejecutadas por etapa y commits locales incrementales en `feat/backend-datapulse`. No se creó frontend Angular ni se publicó infraestructura.
+Backend Django 5.2/DRF con las operaciones del contrato backend requerido y extensiones documentadas. Implementación secuencial, migraciones generadas por Django, pruebas ejecutadas por etapa y commits locales incrementales en `feat/backend-datapulse`. Alcance acordado: backend completo; frontend Angular, despliegue público y video de 5–8 minutos quedan fuera de este encargo. No se afirma cumplir el 100% del PDF.
 
-La instrucción transversal del prompt backend resuelve el conflicto de redondeo: comparar umbrales sin redondeo, compuesto HALF_UP a dos decimales y clasificar después. Las decisiones de faltantes, unidades, permisos, fechas, monedas y seed están desarrolladas en [README](../README.md). Arquitectura y ER en [ARQUITECTURA](ARQUITECTURA.md); contrato y ejemplos en [API](API.md).
+El IRPC se calcula en Decimal sin redondeo intermedio. El valor final se cuantiza a 2 decimales ROUND_HALF_UP y se clasifica contra los umbrales 75/50/25 sobre el valor cuantizado. Las decisiones de faltantes, unidades, permisos, fechas, monedas y seed están desarrolladas en [README](../README.md). Arquitectura y ER en [ARQUITECTURA](ARQUITECTURA.md); contrato y ejemplos en [API](API.md). Las evidencias 0–10 conservan el estado histórico; las observaciones P1–P9 documentan los ajustes posteriores al contrato, incluido If-Match en DELETE.
 
 ## Evidencia por etapa
 
@@ -61,7 +61,7 @@ Revisión independiente final: detectó dos fallos P2 en seed entre días (ident
 - SQLite es solo demo local. Dos pruebas específicas PostgreSQL se omiten en este motor; no se afirma haber verificado sus bloqueos ni su precisión en esta máquina. `docker info` no encontró motor Docker disponible. `compose.yaml` permite levantar PostgreSQL cuando esté activo.
 - Clientes externos probados con respuestas controladas y documentación oficial; no se completó una sincronización real contra los tres proveedores. REST Countries necesita clave personal en variable de entorno. El seed está marcado como sintético.
 - Scheduler documentado, no instalado. Endpoint de sync es síncrono; comandos ejecutables como procesos de background por cron/Task Scheduler.
-- No hay URLs públicas ni frontend implementado: el prompt actual pidió backend. No se hizo push ni se enviaron mensajes/correos.
+- Fuera de alcance acordado: frontend Angular, despliegue público y video de 5–8 minutos. No son omisiones accidentales del encargo backend. Frontend corresponde al 35% de la división técnica del PDF; video al 10% de la división por entregables, sin sumar ambos esquemas como una única rúbrica. La implementación atiende el bloque backend (40%) y la parte backend de integración/tareas (25%), sin afirmar nota obtenida ni despliegue completo. `compose.yaml` configura PostgreSQL local y no sustituye la entrega pública. No se hizo push ni se enviaron mensajes/correos.
 - La exportación tabular se verifica como PDF; no incluye gráficos (extra opcional del PDF original).
 
 ## Ejecutar

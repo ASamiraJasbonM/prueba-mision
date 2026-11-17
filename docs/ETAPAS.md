@@ -4,7 +4,7 @@
 
 - Etapa 0 necesita un proyecto Django importable: se crea configuración base aquí; etapa 1 añade usuario custom antes de ejecutar cualquier migración.
 - DRF/OpenAPI se configuran desde bootstrap, completando sus políticas en etapa 3.
-- La regla transversal de precisión prevalece sobre la frase contradictoria de etapa 6: umbrales con valores crudos, compuesto cuantizado HALF_UP a dos decimales antes de clasificar.
+- Política canónica de IRPC: cálculo Decimal sin redondeo intermedio; compuesto final cuantizado a dos decimales ROUND_HALF_UP y clasificación 75/50/25 sobre ese valor presentado. Ver README y observación P1.
 - Repositorio nuevo en rama `feat/backend-datapulse`; sin push ni despliegue remoto.
 - La creación estándar del venv falló en ensurepip; se usa pip del intérprete anfitrión con `--python` apuntando al venv. Las instalaciones solo afectan `.venv`.
 
@@ -121,3 +121,9 @@ Verificación y salida completa: [observaciones/P6.md](observaciones/P6.md).
 Extensiones trazadas y busqueda de historicos efectiva
 
 Verificación y salida completa: [observaciones/P7.md](observaciones/P7.md).
+
+## Observación P8
+
+Alcance backend separado de frontend, despliegue y video
+
+Verificación y salida completa: [observaciones/P8.md](observaciones/P8.md).
