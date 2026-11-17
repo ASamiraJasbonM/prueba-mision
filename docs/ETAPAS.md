@@ -127,3 +127,9 @@ Verificación y salida completa: [observaciones/P7.md](observaciones/P7.md).
 Alcance backend separado de frontend, despliegue y video
 
 Verificación y salida completa: [observaciones/P8.md](observaciones/P8.md).
+
+## Observación P9
+
+Evidencia global completa del cierre de observaciones
+
+Verificación y salida completa: [observaciones/P9.md](observaciones/P9.md).

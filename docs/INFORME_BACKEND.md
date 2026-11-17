@@ -8,6 +8,8 @@ El IRPC se calcula en Decimal sin redondeo intermedio. El valor final se cuantiz
 
 ## Evidencia por etapa
 
+Revisión posterior: [Cierre de observaciones P1–P9](CIERRE_OBSERVACIONES.md), con resultados completos y cambios al contrato. La ejecución global final está en [P9](observaciones/P9.md); no sustituye las validaciones pendientes en PostgreSQL y proveedores reales.
+
 Cada enlace de resultados contiene comandos y salida completa, archivos modificados y estado de pruebas. Los enlaces de código contienen archivos clave completos tal como estaban al cerrar cada etapa; el código vigente está en `/backend`.
 
 | Etapa | Resultado y pruebas al cierre | Archivos, comandos y salidas | Código completo clave |

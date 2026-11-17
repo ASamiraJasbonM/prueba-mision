@@ -29,6 +29,8 @@ Las adaptaciones de modelo, campos de transparencia y endpoints adicionales est�
 
 Evidencia por etapa en `docs/ETAPAS.md`. El prompt backend del usuario tiene prioridad sobre decisiones recomendadas de `PLAN_CORREGIDO.md`.
 
+La revisión posterior está en [Cierre de observaciones P1–P9](docs/CIERRE_OBSERVACIONES.md), con commits, decisiones y [salida completa de los cinco comandos finales](docs/observaciones/P9.md). Los resultados históricos 0–10 se conservan como evidencia de la evolución; el contrato vigente incluye las correcciones posteriores.
+
 Alcance de este encargo: backend completo. No incluye frontend Angular, despliegue público ni video; son artefactos fuera del alcance acordado, no olvidos. El PDF asigna 35% a la parte técnica de frontend y 10% al video dentro de los entregables (son esquemas de ponderación distintos). La implementación abarca la parte técnica backend descrita como 40% y los componentes de backend del bloque de integración/tareas descrito como 25%; no se afirma haber obtenido esos puntajes ni cumplir el 100% del PDF. El despliegue público sigue pendiente: `compose.yaml` prepara PostgreSQL local, pero no proporciona frontend, URL pública, HTTPS ni video. La validación real en PostgreSQL y contra proveedores se declara pendiente abajo.
 
 ## Base de datos y precisión
