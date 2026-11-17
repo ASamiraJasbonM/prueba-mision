@@ -67,7 +67,7 @@ Con crecimiento de −3% se cuentan seis factores: estabilidad pasa de 70 a 35 p
 
 ## Portafolios y concurrencia
 
-Público significa visible para otros, editable solo por dueño ANALISTA o ADMIN. VIEWER consulta/exporta pero no escribe. Todos los cambios bloquean el portafolio con `select_for_update()` en `transaction.atomic()`; también crear posiciones. Las peticiones PUT/DELETE y POST de posiciones deben incluir `version` actual del portafolio. Cada escritura incrementa versión; un valor antiguo devuelve 409 y revierte toda la transacción. GET detalle/resumen devuelve la versión nueva. El control de versión se prueba en SQLite; los bloqueos reales requieren PostgreSQL.
+Público significa visible para otros, editable solo por dueño ANALISTA o ADMIN. VIEWER consulta/exporta pero no escribe. Todos los cambios bloquean el portafolio con `select_for_update()` en `transaction.atomic()`; también crear posiciones. PUT y POST de posiciones incluyen `version` actual del portafolio en JSON. DELETE de portafolio y de posición exigen la cabecera `If-Match: "N"`, donde N es la versión del portafolio padre; no usan body ni query param. Cada escritura incrementa versión; un valor antiguo devuelve 409 y revierte toda la transacción. GET detalle/resumen devuelve versión y `ETag: "N"`. CORS permite If-Match y expone ETag a Angular. El control de versión se prueba en SQLite; los bloqueos reales requieren PostgreSQL.
 
 Posiciones activas tienen salida null; el límite de USD 50 millones y la distribución se calculan sobre activas. Editar excluye la posición actual del conteo y total. Borrado de portafolio es lógico y su nombre permanece reservado por usuario. La validación asíncrona usa GET `/api/portafolios/nombre-disponible/?nombre=...&excluir_id=...`.
 

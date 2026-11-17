@@ -32,11 +32,11 @@ class PortfolioTests(APICase):
         pdf = self.client.get(url+'export/pdf/')
         self.assertEqual(pdf.status_code, 200)
         self.assertTrue(pdf.content.startswith(b'%PDF-'))
-        response = self.client.delete(url+f'posiciones/{result.data["id"]}/', {'version': 2}, format='json')
+        response = self.client.delete(url+f'posiciones/{result.data["id"]}/', HTTP_IF_MATCH='"2"')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.client.get(url+'resumen/').data['total_invertido_usd'], '0.00')
         self.assertEqual(Posicion.objects.count(), 1)
-        self.assertEqual(self.client.delete(url, {'version': 3}, format='json').status_code, 204)
+        self.assertEqual(self.client.delete(url, HTTP_IF_MATCH='"3"').status_code, 204)
         self.assertFalse(Portafolio.objects.exists())
         self.assertEqual(Portafolio.todos.count(), 1)
 
@@ -86,7 +86,7 @@ class PortfolioTests(APICase):
         url = f'/api/portafolios/{portfolio["id"]}/'
         position = self.client.post(url+'posiciones/', self.position(1, fecha_entrada=str(timezone.now().date())))
         self.assertEqual(position.status_code, 201)
-        self.assertEqual(self.client.delete(url+f'posiciones/{position.data["id"]}/', {'version': 2}, format='json').status_code, 400)
+        self.assertEqual(self.client.delete(url+f'posiciones/{position.data["id"]}/', HTTP_IF_MATCH='"2"').status_code, 400)
         self.assertIsNone(Posicion.objects.get(pk=position.data['id']).fecha_salida)
         Portafolio.objects.filter(pk=portfolio['id']).update(es_publico=False)
         self.authenticate(self.viewer)

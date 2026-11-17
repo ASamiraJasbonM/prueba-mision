@@ -18,9 +18,9 @@ Listados: `{count,next,previous,results}`, `page`, `page_size` (20 por defecto, 
 | GET | `/api/paises/{codigo_iso}/tipo-cambio/` | fecha_desde, fecha_hasta (YYYY-MM-DD); ordering fecha/tasa |
 | POST | `/api/paises/sync-indicadores/` | ADMIN; resultado parcial por país y recálculo encadenado; respuesta síncrona |
 | GET, POST | `/api/portafolios/` | propios+públicos; ADMIN ve todos; search y es_publico |
-| GET, PUT, DELETE | `/api/portafolios/{id}/` | detalle con posiciones/métricas; PUT/DELETE requieren version |
+| GET, PUT, DELETE | `/api/portafolios/{id}/` | detalle con posiciones/métricas y ETag; PUT requiere version en JSON; DELETE requiere If-Match |
 | POST | `/api/portafolios/{id}/posiciones/` | posición + version del portafolio |
-| PUT, DELETE | `/api/portafolios/{id}/posiciones/{posicion_id}/` | PUT posición + version; rechaza posiciones con `fecha_salida` no nula con 400 (versión vigente). DELETE solo version, conserva histórico |
+| PUT, DELETE | `/api/portafolios/{id}/posiciones/{posicion_id}/` | PUT posición + version; rechaza posiciones con `fecha_salida` no nula con 400 (versión vigente). DELETE requiere If-Match del portafolio padre y conserva histórico |
 | GET | `/api/portafolios/{id}/resumen/` | distribución activa, cobertura y riesgo ponderado |
 | GET | `/api/portafolios/{id}/export/pdf/` | application/pdf, attachment |
 | GET | `/api/riesgo/` | último por país, orden IRPC descendente; nivel_riesgo, ordering |
@@ -51,7 +51,19 @@ Agregar posición, usando la versión obtenida de GET del portafolio:
 {"pais":"CO","tipo_activo":"RENTA_FIJA","monto_inversion_usd":"10000.00","fecha_entrada":"2026-11-16","notas":"Simulación","version":1}
 ```
 
-La fecha es solo ejemplo; usar una fecha UTC no futura. Montos/tasas/scores son strings decimales. Crear posición incrementa versión; recuperarla en GET detalle/resumen antes de otra escritura. DELETE de posición cierra en fecha UTC actual y devuelve 400 si la entrada es hoy. DELETE de portafolio recibe `{"version":2}` y devuelve 204.
+La fecha es solo ejemplo; usar una fecha UTC no futura. Montos/tasas/scores son strings decimales. Crear posición incrementa versión; recuperarla en GET detalle/resumen antes de otra escritura. DELETE de posición cierra en fecha UTC actual y devuelve 400 si la entrada es hoy. DELETE de portafolio devuelve 204.
+
+Ambos DELETE exigen `If-Match: "2"` (ejemplo de ETag fuerte; comillas obligatorias), sin body. N siempre representa la versión del portafolio padre, también al cerrar una posición. La ausencia o sintaxis inválida de cabecera devuelve 400; versión obsoleta devuelve 409 sin cambios. No se admiten comodín `*`, etiquetas débiles `W/"2"`, varias etiquetas, ni fallback a `?version=`/JSON. GET detalle y resumen exponen `ETag: "N"`; también sigue disponible `version` en JSON. CORS permite la cabecera de petición y expone ETag.
+
+DRF sí puede leer `request.data` en DELETE (el flujo anterior lo verificaba); la migración a cabecera evita depender de cuerpos DELETE que algunos intermediarios pueden descartar. Ejemplo de petición:
+
+```http
+DELETE /api/portafolios/1/posiciones/3/
+Authorization: Bearer <access>
+If-Match: "2"
+```
+
+Se conserva 409 para una versión obsoleta por el contrato de este backend; no se usa 412. El formato de errores sigue siendo el mismo.
 
 409:
 

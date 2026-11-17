@@ -1,3 +1,4 @@
+import re
 from django.db.models import Q
 from django.http import HttpResponse
 from rest_framework import serializers, viewsets, status
@@ -10,6 +11,12 @@ from .permissions import PuedeEditarPortafolio
 from .services import portfolios as domain
 from .services.pdf_report import portfolio_pdf
 from .audit import audit
+from .api import ErrorResponseSerializer
+
+IF_MATCH_PARAMETER = OpenApiParameter(
+    'If-Match', str, OpenApiParameter.HEADER, required=True,
+    pattern=r'^"[1-9][0-9]*"$',
+    description='ETag fuerte de la versión actual del portafolio padre; por ejemplo: "2". No se lee versión del body DELETE.')
 
 
 class PositionSerializer(serializers.ModelSerializer):
@@ -33,7 +40,17 @@ class PositionWriteSerializer(PositionSerializer):
 
 
 class VersionSerializer(serializers.Serializer):
-    version = serializers.IntegerField(min_value=1)
+    version = serializers.IntegerField(min_value=1, max_value=2147483647)
+
+
+def delete_version(request):
+    value = request.headers.get('If-Match', '')
+    match = re.fullmatch(r'"([1-9][0-9]*)"', value)
+    if match is None:
+        raise serializers.ValidationError({'If-Match': 'Envía la versión vigente entre comillas, por ejemplo: "2".'})
+    serializer = VersionSerializer(data={'version': match.group(1)})
+    serializer.is_valid(raise_exception=True)
+    return serializer.validated_data['version']
 
 
 class DistributionSerializer(serializers.Serializer):
@@ -118,6 +135,11 @@ class PortafolioViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         return PortfolioDetailSerializer if self.action == 'retrieve' else super().get_serializer_class()
 
+    def retrieve(self, request, *args, **kwargs):
+        response = super().retrieve(request, *args, **kwargs)
+        response['ETag'] = f'"{response.data["version"]}"'
+        return response
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -135,11 +157,11 @@ class PortafolioViewSet(viewsets.ModelViewSet):
         portfolio = domain.update_portfolio(request.user, portfolio.pk, version, data)
         return Response(self.get_serializer(portfolio).data)
 
+    @extend_schema(request=None, parameters=[IF_MATCH_PARAMETER],
+                   responses={204: None, 400: ErrorResponseSerializer, 409: ErrorResponseSerializer})
     def destroy(self, request, *args, **kwargs):
         portfolio = self.get_object()
-        serializer = VersionSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        domain.delete_portfolio(request.user, portfolio.pk, serializer.validated_data['version'])
+        domain.delete_portfolio(request.user, portfolio.pk, delete_version(request))
         return Response(status=204)
 
     @extend_schema(request=PositionWriteSerializer, responses={201: PositionSerializer})
@@ -153,17 +175,16 @@ class PortafolioViewSet(viewsets.ModelViewSet):
         result = domain.add_position(request.user, portfolio.pk, version, data)
         return Response(PositionSerializer(result).data, status=201)
 
-    @extend_schema(methods=['PUT'], request=PositionWriteSerializer, responses=PositionSerializer,
+    @extend_schema(methods=['PUT'], request=PositionWriteSerializer, responses={200: PositionSerializer, 400: ErrorResponseSerializer},
                    parameters=[OpenApiParameter('posicion_id', int, OpenApiParameter.PATH)])
-    @extend_schema(methods=['DELETE'], request=VersionSerializer, responses=PositionSerializer,
-                   parameters=[OpenApiParameter('posicion_id', int, OpenApiParameter.PATH)])
+    @extend_schema(methods=['DELETE'], request=None, operation_id='portafolios_posiciones_destroy',
+                   responses={200: PositionSerializer, 400: ErrorResponseSerializer, 409: ErrorResponseSerializer},
+                   parameters=[OpenApiParameter('posicion_id', int, OpenApiParameter.PATH), IF_MATCH_PARAMETER])
     @action(detail=True, methods=['put', 'delete'], url_path=r'posiciones/(?P<posicion_id>\d+)')
     def posicion(self, request, pk=None, posicion_id=None):
         portfolio = self.get_object()
         if request.method == 'DELETE':
-            serializer = VersionSerializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            result = domain.close_position(request.user, portfolio.pk, posicion_id, serializer.validated_data['version'])
+            result = domain.close_position(request.user, portfolio.pk, posicion_id, delete_version(request))
         else:
             serializer = PositionWriteSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
@@ -175,7 +196,10 @@ class PortafolioViewSet(viewsets.ModelViewSet):
     @extend_schema(responses=PortfolioSummarySerializer)
     @action(detail=True, methods=['get'])
     def resumen(self, request, pk=None):
-        return Response(domain.portfolio_summary(self.get_object()))
+        portfolio = self.get_object()
+        response = Response(domain.portfolio_summary(portfolio))
+        response['ETag'] = f'"{portfolio.version}"'
+        return response
 
     @extend_schema(responses={(200, 'application/pdf'): OpenApiTypes.BINARY})
     @action(detail=True, methods=['get'], url_path='export/pdf')

@@ -6,8 +6,19 @@ from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
+from rest_framework import serializers
 
 logger = logging.getLogger('datapulse')
+
+
+class ErrorContentSerializer(serializers.Serializer):
+    code = serializers.CharField()
+    message = serializers.CharField()
+    details = serializers.JSONField()
+
+
+class ErrorResponseSerializer(serializers.Serializer):
+    error = ErrorContentSerializer()
 
 
 class Conflict(APIException):

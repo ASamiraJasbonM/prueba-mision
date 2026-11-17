@@ -109,3 +109,9 @@ Verificación y salida completa: [observaciones/P4.md](observaciones/P4.md).
 Posiciones cerradas inmutables con rechazo 400 documentado
 
 Verificación y salida completa: [observaciones/P5.md](observaciones/P5.md).
+
+## Observación P6
+
+DELETE con If-Match, ETag y CORS verificados
+
+Verificación y salida completa: [observaciones/P6.md](observaciones/P6.md).
