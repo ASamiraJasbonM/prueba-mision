@@ -85,3 +85,9 @@ Evidencia completa: [etapas/10.md](etapas/10.md).
 Regla canonica de redondeo y bordes de clasificacion
 
 Verificación y salida completa: [observaciones/P1.md](observaciones/P1.md).
+
+## Observación P2
+
+Trazabilidad comprobada de los escenarios IRPC 69, 75 y 72
+
+Verificación y salida completa: [observaciones/P2.md](observaciones/P2.md).

@@ -70,11 +70,15 @@ def classify(value):
     return 'CRITICO'
 
 
+def compose_irpc(economic, exchange, stability):
+    return quantize(economic * Decimal('.40') + exchange * Decimal('.30') + stability * Decimal('.30'))
+
+
 def calculate_scores(data, variations, depreciation):
     economic = score_economico(data)
     exchange = score_cambiario(variations, depreciation)
     stability = score_estabilidad(data)
-    composite = quantize(economic * Decimal('.40') + exchange * Decimal('.30') + stability * Decimal('.30'))
+    composite = compose_irpc(economic, exchange, stability)
     return {'score_economico': quantize(economic), 'score_cambiario': quantize(exchange),
             'score_estabilidad': quantize(stability), 'indice_compuesto': composite,
             'nivel_riesgo': classify(composite)}
