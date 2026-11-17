@@ -71,3 +71,5 @@ El riesgo ponderado usa solo montos con IRPC disponible y devuelve el monto cubi
 - Etapa 06: IRPC Decimal, alertas y lectura individual
 
 - Etapa 07: Portafolios transaccionales, posiciones y exportacion PDF
+
+- Etapa 08: Dashboard con KPIs, mapa y tendencias de cinco anios

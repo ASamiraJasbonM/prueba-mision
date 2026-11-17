@@ -61,3 +61,9 @@ Evidencia completa: [etapas/06.md](etapas/06.md).
 Portafolios transaccionales, posiciones y exportacion PDF
 
 Evidencia completa: [etapas/07.md](etapas/07.md).
+
+## Etapa 08: verificada
+
+Dashboard con KPIs, mapa y tendencias de cinco anios
+
+Evidencia completa: [etapas/08.md](etapas/08.md).

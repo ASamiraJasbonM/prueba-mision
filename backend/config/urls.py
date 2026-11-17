@@ -9,12 +9,14 @@ from django.urls import include
 from core.data_api import PaisViewSet
 from core.risk_api import RiesgoViewSet, AlertaViewSet
 from core.portfolio_api import PortafolioViewSet
+from core.dashboard_api import DashboardViewSet
 
 router = DefaultRouter()
 router.register('paises', PaisViewSet)
 router.register('riesgo', RiesgoViewSet, basename='riesgo')
 router.register('alertas', AlertaViewSet, basename='alerta')
 router.register('portafolios', PortafolioViewSet, basename='portafolio')
+router.register('dashboard', DashboardViewSet, basename='dashboard')
 
 urlpatterns = [
     path('api/', include(router.urls)),
