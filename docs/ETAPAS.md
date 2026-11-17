@@ -37,3 +37,9 @@ Evidencia completa: [etapas/02.md](etapas/02.md).
 Politicas DRF, errores uniformes y throttling
 
 Evidencia completa: [etapas/03.md](etapas/03.md).
+
+## Etapa 04: verificada
+
+Autenticacion JWT, perfiles y permisos seguros
+
+Evidencia completa: [etapas/04.md](etapas/04.md).

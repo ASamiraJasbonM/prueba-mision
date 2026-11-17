@@ -2,8 +2,14 @@ from django.contrib import admin
 from django.urls import path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from core.health import health
+from core.auth_api import RegisterView, LoginView, MeView
+from rest_framework_simplejwt.views import TokenRefreshView
 
 urlpatterns = [
+    path('api/auth/register/', RegisterView.as_view()),
+    path('api/auth/login/', LoginView.as_view()),
+    path('api/auth/refresh/', TokenRefreshView.as_view()),
+    path('api/auth/me/', MeView.as_view()),
     path('api/health/', health),
     path('admin/', admin.site.urls),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
