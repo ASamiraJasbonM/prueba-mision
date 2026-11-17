@@ -10,6 +10,7 @@ from core.data_api import PaisViewSet
 from core.risk_api import RiesgoViewSet, AlertaViewSet
 from core.portfolio_api import PortafolioViewSet
 from core.dashboard_api import DashboardViewSet
+from core.audit_api import AuditListView
 
 router = DefaultRouter()
 router.register('paises', PaisViewSet)
@@ -19,6 +20,7 @@ router.register('portafolios', PortafolioViewSet, basename='portafolio')
 router.register('dashboard', DashboardViewSet, basename='dashboard')
 
 urlpatterns = [
+    path('api/auditoria/', AuditListView.as_view()),
     path('api/', include(router.urls)),
     path('api/auth/register/', RegisterView.as_view()),
     path('api/auth/login/', LoginView.as_view()),

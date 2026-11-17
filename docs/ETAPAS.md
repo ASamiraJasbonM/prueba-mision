@@ -97,3 +97,9 @@ Verificación y salida completa: [observaciones/P2.md](observaciones/P2.md).
 Factores negativos explicitos y detalle trazable del IRPC
 
 Verificación y salida completa: [observaciones/P3.md](observaciones/P3.md).
+
+## Observación P4
+
+Politica unica de auditoria de sistema con usuario null
+
+Verificación y salida completa: [observaciones/P4.md](observaciones/P4.md).

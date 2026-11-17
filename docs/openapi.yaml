@@ -144,6 +144,71 @@ paths:
               schema:
                 $ref: '#/components/schemas/AlertSummary'
           description: ''
+  /api/auditoria/:
+    get:
+      operationId: auditoria_list
+      parameters:
+      - in: query
+        name: accion
+        schema:
+          type: string
+          enum:
+          - CONSULTAR
+          - CREAR
+          - EDITAR
+          - ELIMINAR
+          - EXPORT
+          - LOGIN
+        description: |-
+          * `CREAR` - Crear
+          * `EDITAR` - Editar
+          * `ELIMINAR` - Eliminar
+          * `CONSULTAR` - Consultar
+          * `LOGIN` - Login
+          * `EXPORT` - Exportar
+      - in: query
+        name: entidad_afectada
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: Qué campo usar para ordenar los resultados.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Número de resultados a devolver por página.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: Un término de búsqueda.
+        schema:
+          type: string
+      - in: query
+        name: usuario
+        schema:
+          type: integer
+      tags:
+      - auditoria
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLogActividadList'
+          description: ''
   /api/auth/login/:
     post:
       operationId: auth_login_create
@@ -1135,6 +1200,22 @@ paths:
           description: ''
 components:
   schemas:
+    AccionEnum:
+      enum:
+      - CREAR
+      - EDITAR
+      - ELIMINAR
+      - CONSULTAR
+      - LOGIN
+      - EXPORT
+      type: string
+      description: |-
+        * `CREAR` - Crear
+        * `EDITAR` - Editar
+        * `ELIMINAR` - Eliminar
+        * `CONSULTAR` - Consultar
+        * `LOGIN` - Login
+        * `EXPORT` - Exportar
     AlertSummary:
       type: object
       properties:
@@ -1311,6 +1392,45 @@ components:
       - tipo
       - unidad
       - valor
+    LogActividad:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        usuario:
+          type: integer
+          readOnly: true
+          nullable: true
+        accion:
+          allOf:
+          - $ref: '#/components/schemas/AccionEnum'
+          readOnly: true
+        entidad_afectada:
+          type: string
+          readOnly: true
+        entidad_id:
+          type: string
+          readOnly: true
+        detalle:
+          readOnly: true
+        ip_address:
+          type: string
+          readOnly: true
+          nullable: true
+        fecha:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - accion
+      - detalle
+      - entidad_afectada
+      - entidad_id
+      - fecha
+      - id
+      - ip_address
+      - usuario
     Login:
       type: object
       properties:
@@ -1447,6 +1567,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Indicador'
+    PaginatedLogActividadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LogActividad'
     PaginatedMapList:
       type: object
       required:

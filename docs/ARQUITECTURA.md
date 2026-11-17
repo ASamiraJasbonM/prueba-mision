@@ -37,3 +37,5 @@ Alternativas: comandos en lugar de Celery para evitar broker/worker en esta prue
 Las tres integraciones solo actualizan datos persistidos; consultas de dashboard/portafolio no dependen de una API externa disponible. Ningún dato financiero usa FloatField ni conversiones float. La limitación decimal de SQLite está descrita en README.
 
 El IRPC se calcula en Decimal sin redondeo intermedio. El valor final se cuantiza a 2 decimales ROUND_HALF_UP y se clasifica contra los umbrales 75/50/25 sobre el valor cuantizado.
+
+Decisión explícita de auditoría: `LogActividad.usuario` es nullable para comandos sin sesión, una adaptación del modelo descrito en el PDF. No se usa usuario técnico. El resto del evento conserva su procedencia mediante entidad, acción, detalle y fecha UTC. La consulta GET `/api/auditoria/` es de solo lectura y exige rol ADMIN; los eventos de sistema exponen `usuario: null`.

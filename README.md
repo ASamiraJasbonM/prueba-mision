@@ -95,7 +95,9 @@ Ejemplo cron UTC, ajustando rutas y entorno; ejecutar desde la raíz del proyect
 
 El proceso obtiene configuración de `.env`; en Windows configurar las mismas acciones en Task Scheduler con el Python del venv y argumentos `backend/manage.py ...`. No superponer ejecuciones del mismo comando en el scheduler.
 
-Logs de aplicación JSON por stdout/stderr: evento, nivel, timestamp UTC y metadatos seguros. Middleware registra método, path sin query, usuario, IP de REMOTE_ADDR y duración en ms; no cuerpos, Authorization ni contraseñas. No se confía en X-Forwarded-For del cliente. LogActividad audita CRUD, login y exportación, con usuario null para procesos de sistema. Errores DRF: `{ "error": { "code": "...", "message": "...", "details": {} } }`; no se exponen errores internos ni datos del proveedor.
+Logs de aplicación JSON por stdout/stderr: evento, nivel, timestamp UTC y metadatos seguros. Middleware registra método, path sin query, usuario, IP de REMOTE_ADDR y duración en ms; no cuerpos, Authorization ni contraseñas. No se confía en X-Forwarded-For del cliente. LogActividad audita CRUD, login y exportación. Errores DRF: `{ "error": { "code": "...", "message": "...", "details": {} } }`; no se exponen errores internos ni datos del proveedor.
+
+Decisión explícita respecto al modelo del PDF: `LogActividad.usuario` admite `null` para auditar comandos de sistema, que no tienen sesión de usuario. No se crea un usuario técnico ficticio; los eventos interactivos conservan el usuario autenticado y los de sistema se identifican por entidad, acción, detalle y fecha UTC. GET `/api/auditoria/`, de solo lectura para ADMIN, serializa esos eventos como `"usuario": null`. No se requiere migración porque el campo ya era nullable.
 
 ## Seed y usuarios demo
 

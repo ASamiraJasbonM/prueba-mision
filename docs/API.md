@@ -37,6 +37,8 @@ Listados: `{count,next,previous,results}`, `page`, `page_size` (20 por defecto, 
 
 Extensiones: GET `/api/health/` devuelve `{}`; GET `/api/portafolios/nombre-disponible/?nombre=...&excluir_id=...` sirve para validación async exacta por dueño. El borrado lógico no libera el nombre.
 
+Auditoría: GET `/api/auditoria/` es una extensión de solo lectura para ADMIN. Listado paginado, filtros `accion`, `entidad_afectada`, `usuario` y ordering `fecha`/`accion`. Los eventos de comandos sin sesión tienen `usuario: null`; los interactivos conservan el identificador del usuario.
+
 Crear portafolio:
 
 ```json
