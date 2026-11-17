@@ -48,7 +48,7 @@ backend/
 frontend/README.md        reserva; sin implementación Angular
 docs/                     contrato, diagramas, fuentes, OpenAPI, informes y código por etapa
 scripts/                  registro de etapas, snapshots y chequeo de política numérica
-requirements.txt          dependencias exactas, incluidas transitivas
+pyproject.toml, uv.lock    dependencias directas y resolución exacta transitiva
 .env.example, .gitignore, compose.yaml, README.md
 ```
 

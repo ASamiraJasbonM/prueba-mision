@@ -1,18 +1,78 @@
+# Development/CI only. Production injects its own credentials and TLS settings.
+x-backend: &backend
+  build: .
+  image: datapulse-backend:local
+  env_file: .env
+  volumes:
+    - backend_data:/app/data
+  # SQLite demo files live on the named volume, not the disposable container.
+  # `compose run backend python ...` keeps working because argv is preserved.
+  entrypoint:
+    - /bin/sh
+    - -c
+    - |
+      case "$$DATABASE_URL" in
+        sqlite:*) export DATABASE_URL=sqlite:////app/data/db.sqlite3 ;;
+      esac
+      exec "$$@"
+    - --
+  environment: &backend-environment
+    DEBUG: ${DEBUG:-True}
+    SECURE_SSL_REDIRECT: ${SECURE_SSL_REDIRECT:-False}
+    ALLOWED_HOSTS: ${ALLOWED_HOSTS:-localhost,127.0.0.1,testserver}
+    # Honor the existing .env SQLite demo; without DATABASE_URL, use Compose DB.
+    # PostgreSQL URLs inside containers must use host "db", not localhost.
+    DATABASE_URL: ${DATABASE_URL:-postgresql://${POSTGRES_USER:-datapulse}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-datapulse}}
+
 services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: datapulse
-      POSTGRES_USER: datapulse
+      POSTGRES_DB: ${POSTGRES_DB:-datapulse}
+      POSTGRES_USER: ${POSTGRES_USER:-datapulse}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Definir POSTGRES_PASSWORD en .env}
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - datapulse_pg:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U datapulse -d datapulse"]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 5s
       timeout: 3s
       retries: 10
+
+  backend:
+    <<: *backend
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    # Local orchestration only; the production image CMD never migrates.
+    # Overriding command with `compose run ... python ... test` skips this step.
+    command:
+      - /bin/sh
+      - -c
+      - >-
+        uv run --frozen --no-sync --no-dev python backend/manage.py migrate --noinput &&
+        exec uv run --frozen --no-sync --no-dev gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 60
+
+  test-postgresql:
+    <<: *backend
+    profiles: [test]
+    environment:
+      <<: *backend-environment
+      DATABASE_URL: postgresql://${POSTGRES_USER:-datapulse}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-datapulse}
+      DEBUG: "False"
+      SECURE_SSL_REDIRECT: "False"
+      ALLOWED_HOSTS: "*"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["uv", "run", "--frozen", "--no-sync", "--no-dev", "python", "backend/manage.py", "test", "-v", "2"]
+    healthcheck:
+      disable: true
+
 volumes:
   datapulse_pg:
+  backend_data:

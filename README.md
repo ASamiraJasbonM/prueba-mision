@@ -2,22 +2,21 @@
 
 Implementación por etapas de Django + DRF. Frontend reservado; sin despliegue remoto en este encargo.
 
-## Desarrollo local (PowerShell, Python 3.12)
+## Desarrollo local (PowerShell, Python 3.12 y uv 0.10.11)
 
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\python -m pip install -r requirements.txt
+uv sync --frozen
 Copy-Item .env.example .env
 # Sustituir SECRET_KEY en .env por un secreto aleatorio local.
-.\.venv\Scripts\python backend/manage.py check
-.\.venv\Scripts\python backend/manage.py migrate
-.\.venv\Scripts\python backend/manage.py seed_data
-.\.venv\Scripts\python backend/manage.py runserver 127.0.0.1:8000
+uv run --frozen python backend/manage.py check
+uv run --frozen python backend/manage.py migrate
+uv run --frozen python backend/manage.py seed_data
+uv run --frozen python backend/manage.py runserver 127.0.0.1:8000
 ```
 
 La configuración lee `.env` desde la raíz. `SECRET_KEY` es obligatorio. SQLite local; PostgreSQL mediante `DATABASE_URL`. `DEBUG=False` activa cookies seguras y redirección HTTPS salvo ajuste explícito para un proxy de desarrollo.
 
-Si ensurepip falla por permisos del directorio temporal en un sandbox, instalar con el pip anfitrión: `python -m pip --python .venv/Scripts/python.exe install -r requirements.txt`. No reemplazar el intérprete de pruebas por el global.
+uv crea y mantiene `.venv`; no se instala el proyecto con pip. `pyproject.toml` declara las dependencias directas y las restricciones transitivas verificadas; `uv.lock` fija resolución, fuentes y hashes. Python queda acotado a `>=3.12,<3.13` para conservar el entorno validado. Las pruebas actuales no requieren paquetes adicionales: el grupo `dev` está vacío. Ver [gestión de dependencias con uv](docs/DEPENDENCIAS_UV.md).
 
 API local: http://127.0.0.1:8000/api/ ; Swagger: http://127.0.0.1:8000/api/docs/ . No hay URLs públicas: el alcance de este encargo es backend local, sin frontend ni publicación.
 
@@ -86,10 +85,10 @@ El riesgo ponderado usa solo montos con IRPC disponible y devuelve el monto cubi
 Los comandos son procesos independientes aptos para cron/Task Scheduler; no requieren Celery/Redis. La sincronización bajo demanda por POST ADMIN espera el resultado; no se anuncia como un job asíncrono. La programación se configura fuera de Django, no se instala automáticamente en este equipo.
 
 ```powershell
-.\.venv\Scripts\python backend/manage.py sync_indicadores
-.\.venv\Scripts\python backend/manage.py sync_tipos_cambio
-.\.venv\Scripts\python backend/manage.py recalcular_irpc
-.\.venv\Scripts\python backend/manage.py sync_paises
+uv run --frozen python backend/manage.py sync_indicadores
+uv run --frozen python backend/manage.py sync_tipos_cambio
+uv run --frozen python backend/manage.py recalcular_irpc
+uv run --frozen python backend/manage.py sync_paises
 ```
 
 `sync_indicadores` siempre encadena recálculo, incluso ante fallos parciales; cambio diario también recalcula. Reintentos HTTP: máximo dos adicionales, timeout por petición configurable, solo GET y fallos transitorios. Sincronización por país/indicador, transacciones cortas sin llamadas de red dentro. No se eliminan datos anteriores ante errores. Para REST Countries v5 configurar `REST_COUNTRIES_API_KEY` (ver docs/FUENTES.md).
@@ -97,8 +96,8 @@ Los comandos son procesos independientes aptos para cron/Task Scheduler; no requ
 Ejemplo cron UTC, ajustando rutas y entorno; ejecutar desde la raíz del proyecto:
 
 ```cron
-0 2 * * * cd /srv/datapulse && .venv/bin/python backend/manage.py sync_indicadores >> /srv/logs/indicadores.log 2>&1
-0 3 * * * cd /srv/datapulse && .venv/bin/python backend/manage.py sync_tipos_cambio >> /srv/logs/cambio.log 2>&1
+0 2 * * * cd /srv/datapulse && uv run --frozen python backend/manage.py sync_indicadores >> /srv/logs/indicadores.log 2>&1
+0 3 * * * cd /srv/datapulse && uv run --frozen python backend/manage.py sync_tipos_cambio >> /srv/logs/cambio.log 2>&1
 ```
 
 El proceso obtiene configuración de `.env`; en Windows configurar las mismas acciones en Task Scheduler con el Python del venv y argumentos `backend/manage.py ...`. No superponer ejecuciones del mismo comando en el scheduler.
@@ -126,10 +125,10 @@ Son credenciales públicas de prueba exigidas por el enunciado; no son secretos 
 ## Pruebas y PostgreSQL
 
 ```powershell
-.\.venv\Scripts\python backend/manage.py test
-.\.venv\Scripts\python backend/manage.py makemigrations --check --dry-run
-.\.venv\Scripts\python backend/manage.py spectacular --validate --fail-on-warn --file docs/openapi.yaml
-.\.venv\Scripts\python scripts/check_numeric_policy.py
+uv run --frozen python backend/manage.py test
+uv run --frozen python backend/manage.py makemigrations --check --dry-run
+uv run --frozen python backend/manage.py spectacular --validate --fail-on-warn --file docs/openapi.yaml
+uv run --frozen python scripts/check_numeric_policy.py
 ```
 
 El runner usa base efímera limpia. Tests verifican constraints, auth/roles, conflictos de versión/rollback, posiciones, IRPC y umbrales, parciales, deduplicación/lectura global, fallos de proveedores, comandos, dashboard, PDF y seed. HTTP externo usa respuestas controladas: no necesita red para pruebas. Dos pruebas específicas de precisión grande y escritores simultáneos se omiten en SQLite y se habilitan en PostgreSQL.

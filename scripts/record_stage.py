@@ -20,7 +20,7 @@ for args in commands:
         sys.exit(result.returncode)
     if args[0] == 'test' and ('Ran 0 tests' in output or 'NO TESTS RAN' in output):
         raise RuntimeError('La etapa no pasa sin ejecutar pruebas reales.')
-paths = ['backend', 'frontend', 'docs', 'scripts', 'README.md', 'requirements.txt', '.env.example', '.gitignore', 'PLAN_CORREGIDO.md', 'compose.yaml']
+paths = ['backend', 'frontend', 'docs', 'scripts', 'README.md', 'pyproject.toml', 'uv.lock', '.python-version', '.env.example', '.gitignore', 'PLAN_CORREGIDO.md', 'compose.yaml']
 subprocess.run(['git', 'add', '--', *paths], cwd=root, check=True)
 changed = subprocess.check_output(['git', 'diff', '--cached', '--name-only'], cwd=root, text=True)
 chunks.append('## Archivos creados/modificados\n\n```text\n' + changed + '```\n')

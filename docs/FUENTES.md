@@ -1,6 +1,6 @@
 # Fuentes técnicas consultadas
 
-- Django: https://www.djangoproject.com/download/ (rama elegida 5.2 LTS, versiones exactas en requirements.txt).
+- Django: https://www.djangoproject.com/download/ (rama elegida 5.2 LTS, versiones exactas en pyproject.toml + uv.lock).
 - DRF: https://www.django-rest-framework.org/community/3.16-announcement/
 - World Bank: https://datahelpdesk.worldbank.org/knowledgebase/articles/898581-api-basic-call-structures
 - ExchangeRate-API: https://www.exchangerate-api.com/docs/free (endpoint open.er-api.com/v6/latest/USD, sin clave, actualización diaria; requiere atribución «Rates By Exchange Rate API» enlazada a https://www.exchangerate-api.com en la UI que utilice tasas).
