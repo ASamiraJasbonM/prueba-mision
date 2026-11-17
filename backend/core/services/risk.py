@@ -56,9 +56,19 @@ def stability_penalties(data):
     }
 
 
+def risk_factors(data):
+    deductions = {**economic_penalties(data), **stability_penalties(data)}
+    return [{'factor': key, 'valor': str(data[key]), 'penalizacion': str(value)}
+            for key, value in deductions.items() if value > 0]
+
+
+def contar_indicadores_en_riesgo(data):
+    return len(risk_factors(data))
+
+
 def score_estabilidad(data):
     deductions = stability_penalties(data)
-    negative_count = sum(value > 0 for value in {**economic_penalties(data), **deductions}.values())
+    negative_count = contar_indicadores_en_riesgo(data)
     return max(Decimal('0'), Decimal('100') - sum(deductions.values()) - negative_count * 5)
 
 
@@ -115,6 +125,9 @@ def calculate_country(country):
     if not rates or rates[0].fecha != today-timedelta(days=30) or rates[-1].fecha != today:
         missing.append('DEPRECIACION_30_DIAS')
     detail = {'parcial': bool(missing), 'faltantes': missing, 'fuentes': sources,
+        'factores_en_riesgo': risk_factors(data),
+        'cantidad_indicadores_en_riesgo': contar_indicadores_en_riesgo(data),
+        'penalizacion_concentracion': str(quantize(Decimal(contar_indicadores_en_riesgo(data)) * 5)),
         'fecha_negocio_utc': str(today), 'datos': {key: str(val) for key, val in data.items()},
         'tasas': [{'fecha': str(row.fecha), 'tasa': str(row.tasa), 'variacion': str(row.variacion_porcentual) if row.variacion_porcentual is not None else None,
                    'fuente': row.fuente} for row in rates],

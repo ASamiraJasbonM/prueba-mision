@@ -48,7 +48,8 @@ Toda normalización usa Decimal y ROUND_HALF_UP. World Bank PIB y PIB per cápit
 - La variación compara únicamente fecha UTC anterior exacta. La depreciación es `(tasa_inicial / tasa_final - 1) * 100`, con tasa local → USD. Volatilidad: desviación poblacional Decimal de variaciones (hasta 30); con menos de dos observaciones se omite esa penalización.
 - Se usan últimos indicadores disponibles; crecimiento PIB requiere año previo consecutivo y valor anterior positivo. Se homogeneiza su unidad en memoria, sin alterar persistencia.
 - Datos ausentes omiten la penalización correspondiente, mantienen pesos y marcan `detalle_calculo.parcial/faltantes`. Esto puede sobreestimar el score y nunca debe ocultarse en UI.
-- Se cuenta una vez cada uno de los seis factores con penalización: PIB per cápita, inflación, desempleo, deuda/PIB, balanza y crecimiento PIB. El PDF no define esta función.
+- `contar_indicadores_en_riesgo` cuenta una vez cada factor con penalización efectiva mayor que cero según el pseudocódigo. Los seis factores son: PIB per cápita <12.000 USD, inflación >5%, desempleo >7%, deuda/PIB >50%, balanza comercial <0% y crecimiento PIB <1%. Un valor ausente no cuenta. Se elige este criterio porque reutiliza los umbrales explícitos del PDF; contar solo factores severos requeriría inventar otro umbral no definido.
+- `detalle_calculo.factores_en_riesgo` guarda la lista de nombres, valores y penalizaciones efectivas; también se guardan el conteo y la penalización por concentración. `penalizaciones` mantiene el desglose completo, incluidos ceros.
 - El IRPC se calcula en Decimal sin redondeo intermedio. El valor final se cuantiza a 2 decimales ROUND_HALF_UP y se clasifica contra los umbrales 75/50/25 sobre el valor cuantizado.
 - Así se evita mostrar 74.999 como 75.00 en UI mientras la API lo etiqueta MODERADO. La tabla del PDF se interpreta sobre el valor ya presentado al usuario. Los umbrales de penalización de cada indicador se evalúan con su dato de entrada, sin redondearlo para decidir la penalización.
 - Alertas cambiarias usan magnitud absoluta >3%; IRPC crítico al primer cálculo crítico o cruce hacia <25, caída >15 frente al anterior; inflación >50 por país/año/valor, INFO por lote de datos cambiados. Claves naturales de evento deduplican reintentos. Lecturas globales son por usuario.
@@ -61,6 +62,8 @@ Toda normalización usa Decimal y ROUND_HALF_UP. World Bank PIB y PIB per cápit
 | Pseudocódigo + regla propia (5 negativos) | −10 | 5 | 60 | 70 | 72 | MODERADO |
 
 La implementación usa la tercera fila. Las tres filas están cubiertas por pruebas para dejar trazabilidad frente a la discrepancia del PDF (p. 9). En las dos primeras se verifica la composición a partir de sus scores históricos; no son políticas alternativas habilitadas en producción. La tercera se comprueba también desde los indicadores de entrada.
+
+Con crecimiento de −3% se cuentan seis factores: estabilidad pasa de 70 a 35 por −30 de recesión y −5 adicionales de concentración. El efecto compuesto es −10,50 (peso 30%), de 72 a 61,50; el conteo adicional por sí solo resta 5 puntos de estabilidad, equivalentes a 1,50 de IRPC. No se altera la fórmula para interpretar «5 puntos adicionales» como una caída total del IRPC. Con los seis indicadores sanos el conteo es cero.
 
 ## Portafolios y concurrencia
 

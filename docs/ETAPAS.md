@@ -91,3 +91,9 @@ Verificación y salida completa: [observaciones/P1.md](observaciones/P1.md).
 Trazabilidad comprobada de los escenarios IRPC 69, 75 y 72
 
 Verificación y salida completa: [observaciones/P2.md](observaciones/P2.md).
+
+## Observación P3
+
+Factores negativos explicitos y detalle trazable del IRPC
+
+Verificación y salida completa: [observaciones/P3.md](observaciones/P3.md).
