@@ -117,11 +117,13 @@ def calculate_country(country):
         'volatilidad': str(standard_deviation(variations)) if len(variations) >= 2 else None,
         'depreciacion': str(depreciation) if depreciation is not None else None,
         'penalizaciones': {key: str(value) for key, value in {**economic_penalties(data), **stability_penalties(data)}.items()}}
-    signature = hashlib.sha256((country.pk + json.dumps(detail, sort_keys=True)).encode()).hexdigest()
-    existing = IndiceRiesgo.objects.filter(clave_calculo=signature).first()
-    if existing:
-        return existing, False
     previous = country.riesgos.first()
+    fingerprint = hashlib.sha256((country.pk + json.dumps(detail, sort_keys=True)).encode()).hexdigest()
+    if previous and previous.detalle_calculo.get('firma_entradas') == fingerprint:
+        return previous, False
+    # A -> B -> A is a new event; only identical consecutive inputs are a retry.
+    signature = hashlib.sha256((fingerprint + ':' + str(previous.pk if previous else 0)).encode()).hexdigest()
+    detail['firma_entradas'] = fingerprint
     scores = calculate_scores(data, variations, depreciation)
     result = IndiceRiesgo.objects.create(pais=country, clave_calculo=signature, detalle_calculo=detail, **scores)
     audit(None, 'CREAR', result)

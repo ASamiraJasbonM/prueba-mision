@@ -9,14 +9,18 @@ number, summary, commands_json = sys.argv[1:]
 commands = json.loads(commands_json)
 chunks = [f'# Etapa {number}\n\n{summary}\n', '## Comandos y resultados\n']
 for args in commands:
-    command = [sys.executable, str(root / 'backend/manage.py'), *args]
+    command = ([sys.executable, str(root / 'scripts/check_numeric_policy.py')]
+               if args == ['@numeric'] else [sys.executable, str(root / 'backend/manage.py'), *args])
     result = subprocess.run(command, cwd=root / 'backend', capture_output=True, text=True, encoding='utf-8', errors='replace')
     output = result.stdout + result.stderr
     print(output[-6000:], flush=True)
-    chunks.append(f'### manage.py {" ".join(args)}\n\n```text\n{output}\nexit={result.returncode}\n```\n')
+    label = 'scripts/check_numeric_policy.py' if args == ['@numeric'] else 'manage.py ' + ' '.join(args)
+    chunks.append(f'### {label}\n\n```text\n{output}\nexit={result.returncode}\n```\n')
     if result.returncode:
         sys.exit(result.returncode)
-paths = ['backend', 'frontend', 'docs', 'scripts', 'README.md', 'requirements.txt', '.env.example', '.gitignore', 'PLAN_CORREGIDO.md']
+    if args[0] == 'test' and ('Ran 0 tests' in output or 'NO TESTS RAN' in output):
+        raise RuntimeError('La etapa no pasa sin ejecutar pruebas reales.')
+paths = ['backend', 'frontend', 'docs', 'scripts', 'README.md', 'requirements.txt', '.env.example', '.gitignore', 'PLAN_CORREGIDO.md', 'compose.yaml']
 subprocess.run(['git', 'add', '--', *paths], cwd=root, check=True)
 changed = subprocess.check_output(['git', 'diff', '--cached', '--name-only'], cwd=root, text=True)
 chunks.append('## Archivos creados/modificados\n\n```text\n' + changed + '```\n')

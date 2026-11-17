@@ -5,12 +5,13 @@ from django.db import transaction
 from rest_framework import serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import extend_schema, extend_schema_field, OpenApiParameter
 
 from .models import Pais, IndiceRiesgo, Alerta, LecturaAlerta
 from .permissions import EsAdmin
 from .services.risk import recalculate
 from .audit import audit
+from .services.numbers import quantize
 
 
 def latest_risks():
@@ -20,10 +21,37 @@ def latest_risks():
 
 class RiesgoSerializer(serializers.ModelSerializer):
     pais_nombre = serializers.CharField(source='pais.nombre', read_only=True)
+    variacion = serializers.SerializerMethodField()
+    tendencia = serializers.SerializerMethodField()
 
     class Meta:
         model = IndiceRiesgo
         fields = '__all__'
+
+    @extend_schema_field(serializers.DecimalField(max_digits=6, decimal_places=2, allow_null=True))
+    def get_variacion(self, obj):
+        previous = IndiceRiesgo.objects.filter(pais_id=obj.pais_id).filter(
+            Q(fecha_calculo__lt=obj.fecha_calculo) | Q(fecha_calculo=obj.fecha_calculo, pk__lt=obj.pk)).first()
+        return str(quantize(obj.indice_compuesto-previous.indice_compuesto)) if previous else None
+
+    def get_tendencia(self, obj) -> str:
+        delta = self.get_variacion(obj)
+        if delta is None:
+            return 'SIN_HISTORICO'
+        from decimal import Decimal
+        return 'SUBE' if Decimal(delta) > 0 else 'BAJA' if Decimal(delta) < 0 else 'ESTABLE'
+
+
+class RiesgoDetailSerializer(RiesgoSerializer):
+    historico = serializers.SerializerMethodField()
+    historico_url = serializers.SerializerMethodField()
+
+    @extend_schema_field(RiesgoSerializer(many=True))
+    def get_historico(self, obj):
+        return RiesgoSerializer(IndiceRiesgo.objects.filter(pais_id=obj.pais_id)[:20], many=True).data
+
+    def get_historico_url(self, obj) -> str:
+        return f'/api/riesgo/{obj.pais_id}/historico/'
 
 
 class RiskDateFilter(django_filters.FilterSet):
@@ -41,7 +69,6 @@ class RecalculateReportSerializer(serializers.Serializer):
     errores = serializers.ListField(child=serializers.DictField())
 
 
-@extend_schema(parameters=[OpenApiParameter('codigo_iso', str, OpenApiParameter.PATH)])
 class RiesgoViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = IndiceRiesgo.objects.select_related('pais').all()
     serializer_class = RiesgoSerializer
@@ -51,11 +78,15 @@ class RiesgoViewSet(viewsets.ReadOnlyModelViewSet):
     ordering_fields = ['indice_compuesto', 'fecha_calculo', 'pais_id']
     ordering = ['-indice_compuesto', 'pais_id']
 
+    def get_serializer_class(self):
+        return RiesgoDetailSerializer if self.action == 'retrieve' else RiesgoSerializer
+
     def get_queryset(self):
         if self.action == 'historico':
             return super().get_queryset().filter(pais__activo=True)
         return latest_risks()
 
+    @extend_schema(parameters=[OpenApiParameter('codigo_iso', str, OpenApiParameter.PATH)])
     @action(detail=True, methods=['get'])
     def historico(self, request, codigo_iso=None):
         get_object_or_404(Pais.objects.all(), pk=codigo_iso)

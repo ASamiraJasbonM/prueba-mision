@@ -73,3 +73,9 @@ Evidencia completa: [etapas/08.md](etapas/08.md).
 Logs JSON, auditoria y comandos programables encadenados
 
 Evidencia completa: [etapas/09.md](etapas/09.md).
+
+## Etapa 10: verificada
+
+Seed completo, regresiones, OpenAPI y documentacion final
+
+Evidencia completa: [etapas/10.md](etapas/10.md).

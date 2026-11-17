@@ -10,9 +10,18 @@ python -m venv .venv
 Copy-Item .env.example .env
 # Sustituir SECRET_KEY en .env por un secreto aleatorio local.
 .\.venv\Scripts\python backend/manage.py check
+.\.venv\Scripts\python backend/manage.py migrate
+.\.venv\Scripts\python backend/manage.py seed_data
+.\.venv\Scripts\python backend/manage.py runserver 127.0.0.1:8000
 ```
 
 La configuración lee `.env` desde la raíz. `SECRET_KEY` es obligatorio. SQLite local; PostgreSQL mediante `DATABASE_URL`. `DEBUG=False` activa cookies seguras y redirección HTTPS salvo ajuste explícito para un proxy de desarrollo.
+
+Si ensurepip falla por permisos del directorio temporal en un sandbox, instalar con el pip anfitrión: `python -m pip --python .venv/Scripts/python.exe install -r requirements.txt`. No reemplazar el intérprete de pruebas por el global.
+
+API local: http://127.0.0.1:8000/api/ ; Swagger: http://127.0.0.1:8000/api/docs/ . No hay URLs públicas: el alcance de este encargo es backend local, sin frontend ni publicación.
+
+Documentación: [contrato y payloads](docs/API.md), [arquitectura y ER](docs/ARQUITECTURA.md), [fuentes verificadas](docs/FUENTES.md), [resultados por etapa](docs/ETAPAS.md).
 
 ## Estado
 
@@ -77,6 +86,37 @@ El proceso obtiene configuración de `.env`; en Windows configurar las mismas ac
 
 Logs de aplicación JSON por stdout/stderr: evento, nivel, timestamp UTC y metadatos seguros. Middleware registra método, path sin query, usuario, IP de REMOTE_ADDR y duración en ms; no cuerpos, Authorization ni contraseñas. No se confía en X-Forwarded-For del cliente. LogActividad audita CRUD, login y exportación, con usuario null para procesos de sistema. Errores DRF: `{ "error": { "code": "...", "message": "...", "details": {} } }`; no se exponen errores internos ni datos del proveedor.
 
+## Seed y usuarios demo
+
+`seed_data` es offline e idempotente en el mismo día UTC, no sobrescribe registros existentes. Carga 10 países, 6 indicadores × 5 años × 10 países (300), 31 fechas × 10 monedas (310), 2 portafolios con 5 posiciones y los 10 IRPC. Las 31 observaciones permiten 30 variaciones diarias. Una ejecución en otro día añade las fechas nuevas sin borrar histórico.
+
+La identidad de posiciones demo es estable entre días; no se crean nuevas inversiones por cambiar de fecha. Variaciones nuevas siempre usan la tasa del día anterior realmente persistida, aunque el seed conserve tasas previas importadas o editadas.
+
+Regiones, coordenadas y selección de moneda siguen el PDF (PA=PAB, EC=USD). Población, indicadores y tasas son **sintéticos para demostración**: no son cifras financieras reales ni descargas de proveedores. Indicadores usan fuente MANUAL y tasas DEMO_SINTETICO. Sincronizar reemplaza los registros disponibles por sus fuentes reales, conserva el resto y mantiene faltantes explícitos.
+
+| Usuario | Rol | Contraseña demo |
+|---|---|---|
+| admin@datapulse.com | ADMIN (también superusuario Admin Django) | DataPulse2026! |
+| analista@datapulse.com | ANALISTA | DataPulse2026! |
+| viewer@datapulse.com | VIEWER | DataPulse2026! |
+
+Son credenciales públicas de prueba exigidas por el enunciado; no son secretos de infraestructura. Seed no restablece contraseñas de usuarios existentes. En un entorno no demo no ejecutar este comando.
+
+## Pruebas y PostgreSQL
+
+```powershell
+.\.venv\Scripts\python backend/manage.py test
+.\.venv\Scripts\python backend/manage.py makemigrations --check --dry-run
+.\.venv\Scripts\python backend/manage.py spectacular --validate --fail-on-warn --file docs/openapi.yaml
+.\.venv\Scripts\python scripts/check_numeric_policy.py
+```
+
+El runner usa base efímera limpia. Tests verifican constraints, auth/roles, conflictos de versión/rollback, posiciones, IRPC y umbrales, parciales, deduplicación/lectura global, fallos de proveedores, comandos, dashboard, PDF y seed. HTTP externo usa respuestas controladas: no necesita red para pruebas. Dos pruebas específicas de precisión grande y escritores simultáneos se omiten en SQLite y se habilitan en PostgreSQL.
+
+Para PostgreSQL local con Docker activo: definir `POSTGRES_PASSWORD` en `.env`, ejecutar `docker compose up -d db` y establecer `DATABASE_URL=postgresql://datapulse:TU_PASSWORD@localhost:5432/datapulse` (escapar caracteres reservados en URL). Ejecutar migrate, seed y toda la suite de nuevo. La cuenta local necesita permiso de crear la base efímera de pruebas; la cuenta creada por el contenedor lo tiene. El volumen conserva datos entre reinicios; no usar `down -v` si se desean conservar.
+
+No se pudo probar ese motor en esta sesión porque Docker no tenía daemon disponible. No se han ejecutado sincronizaciones reales con claves personales ni instalado un scheduler. Configurar PostgreSQL, la clave REST Countries y cron antes del despliegue, y cumplir la atribución de ExchangeRate-API descrita en docs/FUENTES.md.
+
 
 - Etapa 00: Bootstrap, health y OpenAPI base
 
@@ -99,3 +139,5 @@ Logs de aplicación JSON por stdout/stderr: evento, nivel, timestamp UTC y metad
 - Etapa 08: Dashboard con KPIs, mapa y tendencias de cinco anios
 
 - Etapa 09: Logs JSON, auditoria y comandos programables encadenados
+
+- Etapa 10: Seed completo, regresiones, OpenAPI y documentacion final

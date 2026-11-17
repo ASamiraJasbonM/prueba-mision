@@ -4,6 +4,7 @@ import logging
 from contextvars import ContextVar
 from time import perf_counter_ns
 from django.utils import timezone
+from django.http import JsonResponse
 
 request_ip = ContextVar('request_ip', default=None)
 logger = logging.getLogger('datapulse')
@@ -32,6 +33,8 @@ class RequestLogMiddleware:
         response = None
         try:
             response = self.get_response(request)
+            if request.path.startswith('/api/') and response.status_code == 404 and 'application/json' not in response.get('Content-Type', ''):
+                response = JsonResponse({'error': {'code': 'not_found', 'message': 'No se encontró el recurso.', 'details': {}}}, status=404)
             return response
         finally:
             user = getattr(request, 'user', None)
