@@ -13,3 +13,9 @@
 Bootstrap, health y OpenAPI base
 
 Evidencia completa: [etapas/00.md](etapas/00.md).
+
+## Etapa 01: verificada
+
+Usuario custom con login por email y administrador demo
+
+Evidencia completa: [etapas/01.md](etapas/01.md).
