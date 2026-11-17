@@ -36,3 +36,5 @@ PostgreSQL es el motor de referencia para precisión decimal y concurrencia. SQL
 - Etapa 04: Autenticacion JWT, perfiles y permisos seguros
 
 - Etapa 05: Paises, indicadores y sincronizacion idempotente con Decimal
+
+- Etapa 06: IRPC Decimal, alertas y lectura individual

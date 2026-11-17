@@ -49,3 +49,9 @@ Evidencia completa: [etapas/04.md](etapas/04.md).
 Paises, indicadores y sincronizacion idempotente con Decimal
 
 Evidencia completa: [etapas/05.md](etapas/05.md).
+
+## Etapa 06: verificada
+
+IRPC Decimal, alertas y lectura individual
+
+Evidencia completa: [etapas/06.md](etapas/06.md).

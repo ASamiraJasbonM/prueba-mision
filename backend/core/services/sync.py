@@ -11,6 +11,7 @@ import requests
 from core.models import Pais, Moneda, IndicadorEconomico, TipoCambio
 from .http import get_json
 from .numbers import quantize, RATE, PERCENT, INDICATOR
+from .alerts import indicator_alert, exchange_alert
 
 logger = logging.getLogger('datapulse')
 INDICATORS = {
@@ -51,6 +52,7 @@ def sync_indicators():
     year = timezone.now().year - 1
     logger.info('sync_indicadores_inicio')
     for pais in Pais.objects.all():
+        changed_rows = []
         for tipo, (code, unit) in INDICATORS.items():
             try:
                 page = 1
@@ -65,7 +67,10 @@ def sync_indicators():
                         try:
                             row_year = int(row['date'])
                             if year-4 <= row_year <= year:
-                                report['actualizados'] += int(persist_indicator(pais, tipo, row_year, row['value'], unit))
+                                changed = persist_indicator(pais, tipo, row_year, row['value'], unit)
+                                report['actualizados'] += int(changed)
+                                if changed:
+                                    changed_rows.append(f'{tipo}:{row_year}:{row["value"]}')
                         except SYNC_ERRORS as exc:
                             report_error(report, pais.pk, tipo, exc)
                     if page >= min(int(payload[0].get('pages', 1)), 10):
@@ -74,6 +79,7 @@ def sync_indicators():
             except SYNC_ERRORS as exc:
                 report_error(report, pais.pk, tipo, exc)
         report['paises_procesados'] += 1
+        indicator_alert(pais, changed_rows)
     logger.info('sync_indicadores_fin', extra={'actualizados': report['actualizados'], 'errores': len(report['errores'])})
     return report
 
@@ -116,6 +122,9 @@ def sync_exchange(business_date=None):
             try:
                 raw = Decimal('1') if currency.pk == 'USD' else Decimal(str(rates[currency.pk]))
                 report['actualizados'] += int(persist_exchange(currency, business_date, raw))
+                exchange = TipoCambio.objects.get(moneda_origen=currency, moneda_destino='USD', fecha=business_date)
+                for pais in Pais.objects.filter(moneda=currency):
+                    exchange_alert(pais, exchange)
             except SYNC_ERRORS as exc:
                 report_error(report, currency.pk, 'TIPO_CAMBIO', exc)
     except SYNC_ERRORS as exc:

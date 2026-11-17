@@ -7,9 +7,12 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.routers import DefaultRouter
 from django.urls import include
 from core.data_api import PaisViewSet
+from core.risk_api import RiesgoViewSet, AlertaViewSet
 
 router = DefaultRouter()
 router.register('paises', PaisViewSet)
+router.register('riesgo', RiesgoViewSet, basename='riesgo')
+router.register('alertas', AlertaViewSet, basename='alerta')
 
 urlpatterns = [
     path('api/', include(router.urls)),
