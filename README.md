@@ -23,6 +23,8 @@ API local: http://127.0.0.1:8000/api/ ; Swagger: http://127.0.0.1:8000/api/docs/
 
 Documentación: [contrato y payloads](docs/API.md), [arquitectura y ER](docs/ARQUITECTURA.md), [fuentes verificadas](docs/FUENTES.md), [resultados por etapa](docs/ETAPAS.md).
 
+Las adaptaciones de modelo, campos de transparencia y endpoints adicionales están identificados en [Extensiones respecto al PDF](docs/API.md#extensiones-respecto-al-pdf). El resto de operaciones del contrato backend requerido se conserva; las limitaciones de validación y el alcance de la entrega se indican por separado. Los campos de título, mensaje, severidad y tipo de alerta ya pertenecen al modelo del enunciado.
+
 ## Estado
 
 Evidencia por etapa en `docs/ETAPAS.md`. El prompt backend del usuario tiene prioridad sobre decisiones recomendadas de `PLAN_CORREGIDO.md`.

@@ -14,8 +14,8 @@ Listados: `{count,next,previous,results}`, `page`, `page_size` (20 por defecto, 
 | GET, PUT | `/api/auth/me/` | perfil propio; rol/activo read-only |
 | GET | `/api/paises/` | region, search, ordering nombre/codigo_iso/poblacion |
 | GET | `/api/paises/{codigo_iso}/` | datos e indicadores |
-| GET | `/api/paises/{codigo_iso}/indicadores/` | tipo, anio, ordering anio/tipo/valor |
-| GET | `/api/paises/{codigo_iso}/tipo-cambio/` | fecha_desde, fecha_hasta (YYYY-MM-DD); ordering fecha/tasa |
+| GET | `/api/paises/{codigo_iso}/indicadores/` | tipo, anio, ordering anio/tipo/valor; search en tipo/fuente/unidad (extensión) |
+| GET | `/api/paises/{codigo_iso}/tipo-cambio/` | fecha_desde, fecha_hasta (YYYY-MM-DD); ordering fecha/tasa; search en códigos de moneda/fuente (extensión) |
 | POST | `/api/paises/sync-indicadores/` | ADMIN; resultado parcial por país y recálculo encadenado; respuesta síncrona |
 | GET, POST | `/api/portafolios/` | propios+públicos; ADMIN ve todos; search y es_publico |
 | GET, PUT, DELETE | `/api/portafolios/{id}/` | detalle con posiciones/métricas y ETag; PUT requiere version en JSON; DELETE requiere If-Match |
@@ -72,3 +72,19 @@ Se conserva 409 para una versión obsoleta por el contrato de este backend; no s
 ```
 
 Política de visibilidad: un público ajeno es consultable/exportable, no editable. No permitir que el frontend interprete público como colaborativo. Una subida del IRPC significa menor riesgo; `variacion` compara contra el cálculo anterior y `tendencia` es SUBE/BAJA/ESTABLE/SIN_HISTORICO.
+
+## Extensiones respecto al PDF
+
+Inventario de adaptaciones y extensiones entregadas:
+
+- `Moneda`: normaliza monedas y corrige la FK propuesta hacia un campo no único de País.
+- `LecturaAlerta`: conserva lectura independiente por usuario para alertas globales.
+- `Portafolio.version`, ETag e If-Match: implementan control de concurrencia para el escenario exigido en p. 14.
+- `Pais.bandera_url`: amplía el modelo para soportar bandera solicitada por la fuente externa y la vista de detalle de país.
+- `search` en indicadores (tipo/fuente/unidad) y tipo de cambio (monedas/fuente): búsqueda adicional a países y portafolios, que sí exige el PDF. Está implementada y probada; previamente se anunciaba por herencia de OpenAPI pero no filtraba.
+- `DashboardSummary.paises_con_irpc` y `paises_irpc_parcial`: transparencia de cobertura y datos faltantes. También se detallan factores, conteo y penalización por concentración dentro del JSON de cálculo.
+- Endpoints Health, OpenAPI/Swagger y `nombre-disponible`: operación técnica, documentación y validación asíncrona exacta del nombre.
+- GET `/api/auditoria/` ADMIN y `LogActividad.usuario` nullable: consulta de auditoría y procedencia de comandos de sistema según decisión P4.
+- `IndiceRiesgo.clave_calculo` y `Alerta.clave_evento`: claves técnicas de idempotencia/deduplicación. Los campos de versión, detalle y cobertura no representan nuevos indicadores financieros.
+
+`Alerta.titulo`, `Alerta.mensaje`, `Alerta.severidad` y `Alerta.tipo_alerta` **no son extensiones**: el modelo del PDF los enumera en p. 3; también soportan la UI y sus filtros. Se documentan aquí para corregir esa premisa de la observación. El resto de operaciones del contrato backend requerido se mantiene; esto no implica entregar frontend, publicación ni video.

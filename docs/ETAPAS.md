@@ -115,3 +115,9 @@ Verificación y salida completa: [observaciones/P5.md](observaciones/P5.md).
 DELETE con If-Match, ETag y CORS verificados
 
 Verificación y salida completa: [observaciones/P6.md](observaciones/P6.md).
+
+## Observación P7
+
+Extensiones trazadas y busqueda de historicos efectiva
+
+Verificación y salida completa: [observaciones/P7.md](observaciones/P7.md).

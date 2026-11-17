@@ -87,7 +87,7 @@ class PaisViewSet(viewsets.ReadOnlyModelViewSet):
 
     @extend_schema(responses=IndicadorSerializer(many=True), parameters=[OpenApiParameter('codigo_iso', str, OpenApiParameter.PATH)])
     @action(detail=True, methods=['get'], queryset=IndicadorEconomico.objects.all(), filterset_class=IndicadorFilter, filterset_fields=[],
-            ordering_fields=['anio', 'tipo', 'valor'], search_fields=[])
+            ordering_fields=['anio', 'tipo', 'valor'], search_fields=['tipo', 'fuente', 'unidad'])
     def indicadores(self, request, codigo_iso=None):
         queryset = self.filter_queryset(IndicadorEconomico.objects.filter(pais=self.get_country()))
         page = self.paginate_queryset(queryset)
@@ -95,7 +95,7 @@ class PaisViewSet(viewsets.ReadOnlyModelViewSet):
 
     @extend_schema(responses=CambioSerializer(many=True), parameters=[OpenApiParameter('codigo_iso', str, OpenApiParameter.PATH)])
     @action(detail=True, methods=['get'], queryset=TipoCambio.objects.all(), url_path='tipo-cambio', filterset_class=CambioFilter, filterset_fields=[],
-            ordering_fields=['fecha', 'tasa'], search_fields=[])
+            ordering_fields=['fecha', 'tasa'], search_fields=['moneda_origen__codigo', 'moneda_destino', 'fuente'])
     def tipo_cambio(self, request, codigo_iso=None):
         queryset = self.filter_queryset(TipoCambio.objects.filter(moneda_origen=self.get_country().moneda, moneda_destino='USD'))
         page = self.paginate_queryset(queryset)
