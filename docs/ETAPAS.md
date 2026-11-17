@@ -103,3 +103,9 @@ Verificación y salida completa: [observaciones/P3.md](observaciones/P3.md).
 Politica unica de auditoria de sistema con usuario null
 
 Verificación y salida completa: [observaciones/P4.md](observaciones/P4.md).
+
+## Observación P5
+
+Posiciones cerradas inmutables con rechazo 400 documentado
+
+Verificación y salida completa: [observaciones/P5.md](observaciones/P5.md).

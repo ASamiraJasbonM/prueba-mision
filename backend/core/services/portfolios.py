@@ -94,7 +94,7 @@ def edit_position(user, pk, position_pk, version, data):
     portfolio = lock_portfolio(user, pk, version)
     position = get_object_or_404(Posicion.objects, pk=position_pk, portafolio=portfolio)
     if position.fecha_salida is not None:
-        raise Conflict('La posición ya está cerrada y conserva su histórico.')
+        raise ValidationError({'fecha_salida': 'La posición está cerrada; no se permite editarla ni reabrirla.'})
     for key, value in data.items():
         setattr(position, key, value)
     validate_position(position, exclude_pk=position.pk)

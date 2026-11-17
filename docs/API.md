@@ -20,7 +20,7 @@ Listados: `{count,next,previous,results}`, `page`, `page_size` (20 por defecto, 
 | GET, POST | `/api/portafolios/` | propios+públicos; ADMIN ve todos; search y es_publico |
 | GET, PUT, DELETE | `/api/portafolios/{id}/` | detalle con posiciones/métricas; PUT/DELETE requieren version |
 | POST | `/api/portafolios/{id}/posiciones/` | posición + version del portafolio |
-| PUT, DELETE | `/api/portafolios/{id}/posiciones/{posicion_id}/` | PUT posición + version; DELETE solo version, conserva histórico |
+| PUT, DELETE | `/api/portafolios/{id}/posiciones/{posicion_id}/` | PUT posición + version; rechaza posiciones con `fecha_salida` no nula con 400 (versión vigente). DELETE solo version, conserva histórico |
 | GET | `/api/portafolios/{id}/resumen/` | distribución activa, cobertura y riesgo ponderado |
 | GET | `/api/portafolios/{id}/export/pdf/` | application/pdf, attachment |
 | GET | `/api/riesgo/` | último por país, orden IRPC descendente; nivel_riesgo, ordering |
