@@ -29,7 +29,7 @@ def exception_handler(exc, context):
         exc = Conflict('La operación entra en conflicto con un registro existente.')
     result = drf_exception_handler(exc, context)
     if result is None:
-        logger.error('error_interno', exc_info=True)
+        logger.error('error_interno', extra={'error_code': type(exc).__name__})
         return Response({'error': {'code': 'internal_error', 'message': 'Error interno del servidor.', 'details': {}}}, status=500)
     messages = {
         400: 'Revisa los datos enviados.', 401: 'Autenticación requerida o token inválido.',

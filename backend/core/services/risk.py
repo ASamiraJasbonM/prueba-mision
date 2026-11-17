@@ -8,6 +8,7 @@ from django.utils import timezone
 from core.models import Pais, IndiceRiesgo, IndicadorEconomico, TipoCambio
 from .numbers import quantize, valor_en_usd
 from .alerts import emit
+from core.audit import audit
 
 
 def penalty(value, thresholds, low=False):
@@ -123,6 +124,7 @@ def calculate_country(country):
     previous = country.riesgos.first()
     scores = calculate_scores(data, variations, depreciation)
     result = IndiceRiesgo.objects.create(pais=country, clave_calculo=signature, detalle_calculo=detail, **scores)
+    audit(None, 'CREAR', result)
     if result.indice_compuesto < 25 and (not previous or previous.indice_compuesto >= 25):
         emit(country, 'RIESGO', 'CRITICAL', 'Riesgo crítico', 'El IRPC cayó por debajo de 25.', f'riesgo_critico:{signature}')
     if previous and previous.indice_compuesto - result.indice_compuesto > 15:
@@ -137,6 +139,11 @@ def calculate_country(country):
 def recalculate():
     report = {'calculados': 0, 'existentes': 0, 'errores': []}
     for country in Pais.objects.all():
-        _, created = calculate_country(country)
-        report['calculados' if created else 'existentes'] += 1
+        try:
+            _, created = calculate_country(country)
+            report['calculados' if created else 'existentes'] += 1
+        except (ValueError, ArithmeticError) as exc:
+            import logging
+            logging.getLogger('datapulse').error('riesgo_error', extra={'pais': country.pk, 'error_code': type(exc).__name__})
+            report['errores'].append({'pais': country.pk, 'code': type(exc).__name__})
     return report

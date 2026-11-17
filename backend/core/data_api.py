@@ -7,7 +7,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 
 from .models import Pais, IndicadorEconomico, TipoCambio
 from .permissions import EsAdmin
-from .services.sync import sync_indicators
+from .services.tasks import sync_and_recalculate
 
 
 class IndicadorSerializer(serializers.ModelSerializer):
@@ -58,6 +58,7 @@ class SyncReportSerializer(serializers.Serializer):
     paises_procesados = serializers.IntegerField(required=False)
     actualizados = serializers.IntegerField()
     errores = serializers.ListField(child=serializers.DictField())
+    riesgo = serializers.DictField(required=False)
 
 
 class PaisViewSet(viewsets.ReadOnlyModelViewSet):
@@ -103,4 +104,4 @@ class PaisViewSet(viewsets.ReadOnlyModelViewSet):
     @extend_schema(request=None, responses=SyncReportSerializer)
     @action(detail=False, methods=['post'], url_path='sync-indicadores', permission_classes=[EsAdmin])
     def sync_indicadores(self, request):
-        return Response(sync_indicators())
+        return Response(sync_and_recalculate())

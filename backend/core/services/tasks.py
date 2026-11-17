@@ -1,0 +1,20 @@
+import logging
+from .sync import sync_indicators, sync_exchange
+from .risk import recalculate
+
+logger = logging.getLogger('datapulse')
+
+
+def sync_and_recalculate():
+    report = sync_indicators()
+    # Even partial failures must leave updated countries with a fresh risk calculation.
+    report['riesgo'] = recalculate()
+    return report
+
+
+def exchange_and_recalculate():
+    logger.info('sync_cambio_inicio')
+    report = sync_exchange()
+    report['riesgo'] = recalculate()
+    logger.info('sync_cambio_fin', extra={'actualizados': report['actualizados'], 'errores': len(report['errores'])})
+    return report

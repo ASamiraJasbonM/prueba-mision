@@ -12,6 +12,7 @@ from core.models import Pais, Moneda, IndicadorEconomico, TipoCambio
 from .http import get_json
 from .numbers import quantize, RATE, PERCENT, INDICATOR
 from .alerts import indicator_alert, exchange_alert
+from core.audit import audit
 
 logger = logging.getLogger('datapulse')
 INDICATORS = {
@@ -42,8 +43,9 @@ def persist_indicator(pais, tipo, year, value, unit):
     current = IndicadorEconomico.objects.filter(pais=pais, tipo=tipo, anio=year).first()
     if current and all(getattr(current, key) == val for key, val in defaults.items()):
         return False
-    IndicadorEconomico.objects.update_or_create(pais=pais, tipo=tipo, anio=year,
+    obj, created = IndicadorEconomico.objects.update_or_create(pais=pais, tipo=tipo, anio=year,
         defaults={**defaults, 'fecha_actualizacion': timezone.now()})
+    audit(None, 'CREAR' if created else 'EDITAR', obj)
     return True
 
 
@@ -97,8 +99,9 @@ def persist_exchange(currency, business_date, units_per_usd):
     current = TipoCambio.objects.filter(moneda_origen=currency, moneda_destino='USD', fecha=business_date).first()
     if current and current.tasa == rate and current.variacion_porcentual == change and current.fuente == 'EXCHANGE_RATE_API':
         return False
-    TipoCambio.objects.update_or_create(moneda_origen=currency, moneda_destino='USD', fecha=business_date,
+    obj, created = TipoCambio.objects.update_or_create(moneda_origen=currency, moneda_destino='USD', fecha=business_date,
         defaults={'tasa': rate, 'variacion_porcentual': change, 'fuente': 'EXCHANGE_RATE_API'})
+    audit(None, 'CREAR' if created else 'EDITAR', obj)
     following = TipoCambio.objects.filter(moneda_origen=currency, moneda_destino='USD', fecha=business_date+timedelta(days=1)).first()
     if following:
         following.variacion_porcentual = quantize((following.tasa / rate - 1) * 100, PERCENT)
@@ -158,6 +161,7 @@ def sync_countries():
                     locked.longitud = quantize(Decimal(str(coordinates['lng'])), INDICATOR)
                 locked.full_clean()
                 locked.save()
+                audit(None, 'EDITAR', locked)
             report['actualizados'] += 1
         except SYNC_ERRORS as exc:
             report_error(report, country.pk, 'PAIS', exc)

@@ -67,3 +67,9 @@ Evidencia completa: [etapas/07.md](etapas/07.md).
 Dashboard con KPIs, mapa y tendencias de cinco anios
 
 Evidencia completa: [etapas/08.md](etapas/08.md).
+
+## Etapa 09: verificada
+
+Logs JSON, auditoria y comandos programables encadenados
+
+Evidencia completa: [etapas/09.md](etapas/09.md).

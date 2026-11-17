@@ -10,6 +10,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from .models import Pais, IndiceRiesgo, Alerta, LecturaAlerta
 from .permissions import EsAdmin
 from .services.risk import recalculate
+from .audit import audit
 
 
 def latest_risks():
@@ -114,10 +115,13 @@ class AlertaViewSet(viewsets.ReadOnlyModelViewSet):
 
     def mark(self, alert):
         if alert.usuario_id is None:
-            LecturaAlerta.objects.get_or_create(alerta=alert, usuario=self.request.user)
+            _, created = LecturaAlerta.objects.get_or_create(alerta=alert, usuario=self.request.user)
+            if created:
+                audit(self.request.user, 'EDITAR', alert, {'leida': True})
         elif not alert.leida:
             alert.leida = True
             alert.save(update_fields=['leida'])
+            audit(self.request.user, 'EDITAR', alert, {'leida': True})
 
     @extend_schema(request=None, responses=AlertaSerializer)
     @action(detail=True, methods=['put'])

@@ -53,6 +53,30 @@ Posiciones activas tienen salida null; el límite de USD 50 millones y la distri
 
 El riesgo ponderado usa solo montos con IRPC disponible y devuelve el monto cubierto y países con datos ausentes/parciales. No se reemplaza un riesgo ausente por cero. El PDF tabular incluye posiciones activas/cerradas y advertencia de datos incompletos.
 
+## Operaciones, auditoría y tareas
+
+Los comandos son procesos independientes aptos para cron/Task Scheduler; no requieren Celery/Redis. La sincronización bajo demanda por POST ADMIN espera el resultado; no se anuncia como un job asíncrono. La programación se configura fuera de Django, no se instala automáticamente en este equipo.
+
+```powershell
+.\.venv\Scripts\python backend/manage.py sync_indicadores
+.\.venv\Scripts\python backend/manage.py sync_tipos_cambio
+.\.venv\Scripts\python backend/manage.py recalcular_irpc
+.\.venv\Scripts\python backend/manage.py sync_paises
+```
+
+`sync_indicadores` siempre encadena recálculo, incluso ante fallos parciales; cambio diario también recalcula. Reintentos HTTP: máximo dos adicionales, timeout por petición configurable, solo GET y fallos transitorios. Sincronización por país/indicador, transacciones cortas sin llamadas de red dentro. No se eliminan datos anteriores ante errores. Para REST Countries v5 configurar `REST_COUNTRIES_API_KEY` (ver docs/FUENTES.md).
+
+Ejemplo cron UTC, ajustando rutas y entorno; ejecutar desde la raíz del proyecto:
+
+```cron
+0 2 * * * cd /srv/datapulse && .venv/bin/python backend/manage.py sync_indicadores >> /srv/logs/indicadores.log 2>&1
+0 3 * * * cd /srv/datapulse && .venv/bin/python backend/manage.py sync_tipos_cambio >> /srv/logs/cambio.log 2>&1
+```
+
+El proceso obtiene configuración de `.env`; en Windows configurar las mismas acciones en Task Scheduler con el Python del venv y argumentos `backend/manage.py ...`. No superponer ejecuciones del mismo comando en el scheduler.
+
+Logs de aplicación JSON por stdout/stderr: evento, nivel, timestamp UTC y metadatos seguros. Middleware registra método, path sin query, usuario, IP de REMOTE_ADDR y duración en ms; no cuerpos, Authorization ni contraseñas. No se confía en X-Forwarded-For del cliente. LogActividad audita CRUD, login y exportación, con usuario null para procesos de sistema. Errores DRF: `{ "error": { "code": "...", "message": "...", "details": {} } }`; no se exponen errores internos ni datos del proveedor.
+
 
 - Etapa 00: Bootstrap, health y OpenAPI base
 
@@ -73,3 +97,5 @@ El riesgo ponderado usa solo montos con IRPC disponible y devuelve el monto cubi
 - Etapa 07: Portafolios transaccionales, posiciones y exportacion PDF
 
 - Etapa 08: Dashboard con KPIs, mapa y tendencias de cinco anios
+
+- Etapa 09: Logs JSON, auditoria y comandos programables encadenados

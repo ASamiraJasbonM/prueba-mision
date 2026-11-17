@@ -1,12 +1,16 @@
 import hashlib
 from django.db import transaction
 from core.models import Alerta
+from core.audit import audit
 
 
 @transaction.atomic
 def emit(pais, tipo, severity, title, message, key):
-    return Alerta.objects.get_or_create(clave_evento=key, defaults={
-        'pais': pais, 'tipo_alerta': tipo, 'severidad': severity, 'titulo': title, 'mensaje': message})[0]
+    alert, created = Alerta.objects.get_or_create(clave_evento=key, defaults={
+        'pais': pais, 'tipo_alerta': tipo, 'severidad': severity, 'titulo': title, 'mensaje': message})
+    if created:
+        audit(None, 'CREAR', alert)
+    return alert
 
 
 def indicator_alert(pais, changed_rows):
