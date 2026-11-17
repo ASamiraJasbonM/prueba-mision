@@ -10,9 +10,9 @@ commands = json.loads(commands_json)
 chunks = [f'# Etapa {number}\n\n{summary}\n', '## Comandos y resultados\n']
 for args in commands:
     command = [sys.executable, str(root / 'backend/manage.py'), *args]
-    result = subprocess.run(command, cwd=root, capture_output=True, text=True, encoding='utf-8', errors='replace')
+    result = subprocess.run(command, cwd=root / 'backend', capture_output=True, text=True, encoding='utf-8', errors='replace')
     output = result.stdout + result.stderr
-    print(output[-6000:])
+    print(output[-6000:], flush=True)
     chunks.append(f'### manage.py {" ".join(args)}\n\n```text\n{output}\nexit={result.returncode}\n```\n')
     if result.returncode:
         sys.exit(result.returncode)

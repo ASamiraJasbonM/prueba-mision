@@ -19,3 +19,9 @@ Evidencia completa: [etapas/00.md](etapas/00.md).
 Usuario custom con login por email y administrador demo
 
 Evidencia completa: [etapas/01.md](etapas/01.md).
+
+## Etapa 01: verificada
+
+Verificacion efectiva de usuarios desde directorio backend
+
+Evidencia completa: [etapas/01.md](etapas/01.md).

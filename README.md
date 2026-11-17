@@ -22,3 +22,5 @@ Evidencia por etapa en `docs/ETAPAS.md`. El prompt backend del usuario tiene pri
 - Etapa 00: Bootstrap, health y OpenAPI base
 
 - Etapa 01: Usuario custom con login por email y administrador demo
+
+- Etapa 01: Verificacion efectiva de usuarios desde directorio backend
