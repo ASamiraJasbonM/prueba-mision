@@ -8,6 +8,13 @@ updates:
     groups:
       frontend-dependencies:
         patterns: ['*']
+    # Angular 20 solo soporta TypeScript 5.x. Dependabot propuso Angular 22
+    # (requiere TypeScript >=6 <6.1) junto a TypeScript 7, rompiendo `npm ci`.
+    ignore:
+      - dependency-name: "typescript"
+        versions: [">=6.0.0"]
+      - dependency-name: "@angular/*"
+        versions: [">=21.0.0"]
   # Native uv ecosystem updates pyproject.toml and uv.lock together.
   - package-ecosystem: uv
     directory: /
