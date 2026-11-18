@@ -38,12 +38,13 @@ dependencias. Ver [SEGURIDAD_FRONTEND](SEGURIDAD_FRONTEND.md#verificación-cruza
 
 ## Límite de compatibilidad
 
-No se modifica Angular. La demo DEBUG mantiene CAPTCHA desactivado y seed sin MFA.
-Producción activa CAPTCHA: el registro y login después de fallos necesitan
-captcha_key/captcha_answer; ADMIN enrolado necesita manejar mfa_required y el
-segundo POST. **Estos flujos no están implementados en el frontend actual**.
-No habilitar un despliegue productivo esperando que esa interfaz los resuelva.
-TODO evolución del cliente en otro encargo; no desactivar controles silenciosamente.
+El endurecimiento Angular posterior incorpora CAPTCHA en registro/login y el
+segundo POST para ADMIN enrolado, con TOTP o recovery en code. Se verificó contra
+backend real aislado, incluido logout entre pestañas, sin violaciones CSP. La demo
+habitual conserva seed sin MFA y configuración local; no se desactivan controles
+del backend para hacer funcionar la interfaz. TODO página opcional de enrolamiento
+MFA, TLS/domino real y alternativa accesible para CAPTCHA. Ver
+[validación frontend](VALIDACION_SEGURIDAD_FRONTEND.md).
 
 Las pruebas backend verifican cabeceras/CORS existentes y permisos; el checklist
 HTTPS depende de los dominios/certificados reales, ausentes en este entorno.

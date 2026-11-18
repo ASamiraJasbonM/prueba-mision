@@ -173,6 +173,8 @@ PostgreSQL validado: 61 pruebas aprobadas, sin skips (evidencia en `frontend/REA
 Producción requiere AUDIT_HMAC_KEY, FIELD_ENCRYPTION_KEY (Fernet válida), MFA_KEY y
 SECRET_KEY independientes desde gestor de secretos. DEBUG=False, HTTPS y CAPTCHA
 activo; docs UI desactivada por defecto. `.env.example` es para demo local.
-MFA del ADMIN es opcional y seed no lo habilita. Angular actual no implementa
-CAPTCHA/segundo factor: revisar la limitación antes de despliegue productivo.
+MFA del ADMIN es opcional y seed no lo habilita. Angular incorpora login/registro
+con CAPTCHA y login MFA mediante TOTP o recovery, con logout entre pestañas.
+La página de enrolamiento MFA y el TLS real siguen pendientes de despliegue;
+ver [validación frontend](docs/VALIDACION_SEGURIDAD_FRONTEND.md).
 Dependencias administradas solo con uv; Docker/CI usan uv 0.13.9 corregido.

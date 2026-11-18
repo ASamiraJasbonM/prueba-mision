@@ -40,7 +40,7 @@ responsable, justificación y vencimiento. No hay allowlist de CVEs.
 |---|---|---|---|
 | Fuerza bruta | Axes DB, email normalizado+REMOTE_ADDR, 5 fallos, 15 min | test_five_failures_then_lockout_audited | Ataques distribuidos requieren MFA/controles perimetrales |
 | Evasión con XFF | Se ignora X-Forwarded-For; NUM_PROXIES=0 | test_lockout_cannot_be_bypassed_by_forwarded_for | Tras nginx se comparte IP: configurar proxy confiable explícitamente antes de producción |
-| Registro automatizado | CAPTCHA imagen local, expirable y un solo intento | test_register_requires_captcha_and_challenge_is_single_use | No evita granjas de resolución; Angular actual no presenta el reto |
+| Registro automatizado | CAPTCHA imagen local, expirable y un solo intento | test_register_requires_captcha_and_challenge_is_single_use | No evita granjas de resolución; Angular ya presenta el reto según SEGURIDAD_FRONTEND §4 |
 | Login automatizado | CAPTCHA desde 3 fallos por IP en 10 min | test_login_demands_captcha_after_three_failures | Acumulación Axes es conservadora dentro de su ventana de 15 min |
 | Abuso endpoints caros | login5/min, register3/min, sync2/h, recalcular2/h, export10/min, mfa5/min | tests auth + suite | DRF cache local no es cuota global entre workers; usar cache compartida en producción |
 | Repetición de operaciones | Idempotency-Key opcional, usuario+endpoint, hash cuerpo, TTL5 min, DB/lock usuario | test_idempotency_isolated_by_user_endpoint_and_body | Limpieza periódica de filas expiradas pendiente; escritura concurrente soportada en PG |
@@ -126,7 +126,7 @@ Enrolar/deshabilitar incrementa mfa_epoch y anula accesos anteriores; enrolar
 blacklistea refresh existentes. Nunca hay refresh emitido antes de completar el
 factor. Seed no enrola ADMIN. Tests en test_mfa.py cubren flujo, replay, scopes,
 permisos y sesiones previas. Limitación: MFA opcional para cuentas ADMIN; Angular
-no implementa el segundo paso y no podrá ingresar con una cuenta enrolada.
+ya implementa el segundo paso TOTP/recovery, pero no la página de enrolamiento.
 MFA_ENROLL/MFA_VERIFY_OK/MFA_VERIFY_FAIL/MFA_DISABLE no incluyen códigos/secreto.
 
 ## 7. Cifrado (U2)
@@ -156,10 +156,9 @@ mide sobre PostgreSQL efímero; seed siempre opcional, nunca en recuperación re
 ## 9. Integración (U2)
 
 [INTEGRACION_SEGURIDAD](INTEGRACION_SEGURIDAD.md) y
-[SEGURIDAD_FRONTEND](SEGURIDAD_FRONTEND.md). No cambia el código Angular.
-La demo DEBUG mantiene login/registro anterior; producción exige cliente con
-CAPTCHA y ADMIN enrolado requiere MFA. **No declarar la interfaz lista para esos
-flujos hasta implementarlos**. TLS real/CORS entre dominios se verifica por
+[SEGURIDAD_FRONTEND](SEGURIDAD_FRONTEND.md). La fase backend no cambió Angular;
+el endurecimiento frontend posterior añadió CAPTCHA/MFA y verificó ambos contra
+API real aislada. La demo DEBUG conserva su configuración local. TLS real/CORS entre dominios se verifica por
 despliegue, no se acredita con localhost HTTP.
 
 ## Evidencias

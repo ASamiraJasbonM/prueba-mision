@@ -137,3 +137,17 @@ Los scripts `docker/upstream-fixture.mjs` y `docker/smoke-test.mjs` son verifica
 - Pipeline validado localmente; no se ejecutó en GitHub ni se publicó imagen en GHCR. Se conservaron sin cambios los servicios previos y volúmenes del Compose raíz, además del código/configuración/pruebas Angular existentes.
 
 Los entornos de verificación utilizan nombres y puertos separados. La ejecución habitual de desarrollo en 4200/8000 no se reemplaza por estos contenedores de prueba.
+
+### Endurecimiento Angular
+
+Login y registro responden a CAPTCHA requerido; el segundo paso MFA acepta TOTP
+o recovery sin persistir el reto. Logout se propaga entre pestañas y los errores
+no muestran details internos. `npm run build` prepara CSP meta y verifica ausencia
+de source maps mediante postbuild; nginx mantiene la CSP por cabecera. Se conserva
+el contrato de roles, exportación VIEWER y Decimal/UTC/If-Match.
+
+`npm run audit:prod` comprueba HIGH/CRITICAL de producción. No hay ESLint configurado;
+CI conserva tsc estricto app/spec, agrega source/artifact gates y Dependabot npm.
+La matriz, pruebas, riesgos de tooling y pendientes opcionales están en
+[SEGURIDAD_FRONTEND](../docs/SEGURIDAD_FRONTEND.md) y el
+[informe por etapa](../docs/VALIDACION_SEGURIDAD_FRONTEND.md).
