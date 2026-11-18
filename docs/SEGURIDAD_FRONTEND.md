@@ -236,3 +236,47 @@ del prompt porque no puede garantizarse que un detalle esté libre de credencial
 403/404/409/429/5xx tienen mensajes acotados y acciones. LoadingInterceptor mantiene
 finalize por petición y no altera el contador ante errores. Retry-After no es un
 timer de seguridad independiente y refrescar el navegador no evita el bloqueo servidor.
+
+## 6. Autorización de cliente — U2
+
+| Amenaza | Medida | Prueba | Límite |
+|---|---|---|---|
+| Rol inventado en storage/JWT | Permisos desde me; hasRole/canWrite/canEdit sobre perfil | auth-security y guards originales | Backend siempre autoriza cada operación |
+| Permiso cacheado tras cambio de rol | Guard de escritura vuelve a consultar me; reloadProfile actualiza perfil y redirige si la ruta ya no está permitida | role-security + cambio ADMIN→VIEWER | No se añade polling de perfil; siguiente me/nav escritura confirma rol |
+| Acceso directo a formulario | roleGuard y data.roles ADMIN/ANALISTA en nuevo y editar | prueba tabla de rutas + tres roles | Owner sigue validándose en UI y servidor |
+
+Matriz conservada: ADMIN sincroniza/recalcula y administra portafolios; ANALISTA
+crea/edita los propios; VIEWER consulta y **puede exportar recursos accesibles**.
+El prompt asumía que exportar era escritura rechazada al VIEWER: el contrato real
+lo permite y no se cambia por una suposición. Crear/editar/eliminar/agregar posición
+están condicionados por canWrite/canEdit; sincronizar/recalcular solo por ADMIN
+desde perfil servidor. No se reescriben componentes/listados que ya lo cumplían.
+
+## 7. Fechas y decimales — contrato API
+
+| Amenaza/error | Medida | Prueba | Límite |
+|---|---|---|---|
+| Redondeo cambia una decisión | Decimal string y BigInt para centavos/umbrales | decimal.spec y position-security.spec | number solo en gráficos, IDs y tiempos, no dinero decisorio |
+| Cambio de fecha por zona | DateField permanece YYYY-MM-DD; límite utcToday | fecha futura rechazada en position-security.spec | El servidor revalida hora y fecha autoritativas |
+| Timestamp ambiguo | DatePipe con UTC explícita | prueba de timestamp con offset -05:00 | Zona del usuario no se aplica en esta versión |
+
+No se modifica el cálculo de cartera ni If-Match/409. Number() también es legítimo
+para IDs de ruta, puntos de gráficos y segundos HTTP Retry-After; no se exige un
+grep vacío que elimine esos usos válidos. Las gráficas no deciden inversiones.
+Los montos salen como string exacto y fechas simples no se convierten a Date con
+zona local. Pruebas anteriores permanecen intactas.
+
+## Resultado y pendientes consolidados
+
+Build de producción y tsc estricto correctos; **50 pruebas Karma/Jasmine** (25
+previas +25 nuevas) y **8 pruebas Node** (5 previas +3 nuevas). Audit runtime0;
+tooling16 moderadas según §0. Sin ESLint configurado. No se modifican backend,
+migraciones, DTO de negocio ni pruebas originales. Datos del ensayo aislado y
+logs técnicos permanecen ignorados; no se incluyen credenciales de usuarios reales.
+
+En navegador de producción: MFA TOTP ADMIN, registro con CAPTCHA, login tras tres
+fallos con CAPTCHA y logout real entre pestañas, todos correctos; **0 violaciones
+CSP**. El ensayo no acredita HTTPS/certificados reales, proveedor CAPTCHA accesible,
+reporte CSP, nonces de estilos, cookies HttpOnly ni página de enrolamiento MFA.
+Estos elementos opcionales mantienen TODO explícito y requieren coordinación.
+Detalle por etapa, comandos, archivos y código: [VALIDACION_SEGURIDAD_FRONTEND](VALIDACION_SEGURIDAD_FRONTEND.md).

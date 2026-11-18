@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { map } from 'rxjs';
+import { catchError, map, of, switchMap } from 'rxjs';
 import { AuthService } from './auth.service';
 export const authGuard: CanActivateFn = (_route, state) => {
   const auth = inject(AuthService);
@@ -13,10 +13,15 @@ export const authGuard: CanActivateFn = (_route, state) => {
       ),
     );
 };
-export const roleGuard: CanActivateFn = () => {
+export const roleGuard: CanActivateFn = (route) => {
   const auth = inject(AuthService);
   const router = inject(Router);
   return auth
     .restore()
-    .pipe(map((user) => (user && auth.canWrite() ? true : router.createUrlTree(['/sin-permiso']))));
+    .pipe(switchMap((user) => user ? auth.reloadProfile() : of(null)))
+    .pipe(map((user) => {
+      const roles = route.data?.['roles'];
+      const allowed = Array.isArray(roles) ? !!user && roles.includes(user.rol) : auth.canWrite();
+      return user && allowed ? true : router.createUrlTree(['/sin-permiso']);
+    }), catchError(() => of(router.createUrlTree(['/login']))));
 };

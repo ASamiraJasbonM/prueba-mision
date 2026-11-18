@@ -4,11 +4,13 @@ export const routes: Routes = [
   { path: '', loadComponent: () => import('./portfolio-list').then((m) => m.PortfolioList) },
   {
     path: 'nuevo',
+    data: { roles: ['ADMIN', 'ANALISTA'] },
     canActivate: [roleGuard],
     loadComponent: () => import('./portfolio-form').then((m) => m.PortfolioForm),
   },
   {
     path: ':id/editar',
+    data: { roles: ['ADMIN', 'ANALISTA'] },
     canActivate: [roleGuard],
     loadComponent: () => import('./portfolio-form').then((m) => m.PortfolioForm),
   },
