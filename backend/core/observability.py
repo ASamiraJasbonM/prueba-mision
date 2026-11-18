@@ -34,7 +34,11 @@ class RequestLogMiddleware:
         try:
             response = self.get_response(request)
             if request.path.startswith('/api/') and response.status_code == 404 and 'application/json' not in response.get('Content-Type', ''):
+                original = response
                 response = JsonResponse({'error': {'code': 'not_found', 'message': 'No se encontró el recurso.', 'details': {}}}, status=404)
+                for name, value in original.items():
+                    if name.lower() not in {'content-type', 'content-length'}:
+                        response[name] = value
             return response
         finally:
             user = getattr(request, 'user', None)

@@ -27,7 +27,10 @@ class SecurityHeadersTests(APICase):
 
     @override_settings(API_DOCS_ENABLED=False)
     def test_docs_disabled_but_schema_available(self):
-        self.assertEqual(self.client.get('/api/docs/').status_code, 404)
+        response = self.client.get('/api/docs/')
+        self.assertEqual(response.status_code, 404)
+        self.assertIn('Content-Security-Policy', response)
+        self.assertIn('Permissions-Policy', response)
         self.assertEqual(self.client.get('/api/schema/').status_code, 200)
 
     def test_proxy_header_untrusted_by_default(self):
