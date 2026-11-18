@@ -1,0 +1,167 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      [
+        "frontend/**",
+        ".github/workflows/frontend-ci.yml",
+        "compose.yaml",
+        "docs/SEGURIDAD_FRONTEND.md",
+      ]
+  pull_request:
+    branches: [main]
+    paths:
+      [
+        "frontend/**",
+        ".github/workflows/frontend-ci.yml",
+        "compose.yaml",
+        "docs/SEGURIDAD_FRONTEND.md",
+      ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+    working-directory: frontend
+
+jobs:
+  lint-and-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.12.0"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      # No ESLint target exists. Check the existing strict TS projects and infrastructure syntax.
+      - name: Strict TypeScript and infrastructure syntax
+        run: |
+          npx --no-install tsc -p tsconfig.app.json --noEmit
+          npx --no-install tsc -p tsconfig.spec.json --noEmit
+          node --check docker/configure-build.mjs
+          node --check docker/finalize-index.mjs
+          node --check docker/smoke-test.mjs
+          node --check docker/upstream-fixture.mjs
+          sh -n docker/14-validate-backend.sh
+          node --test docker/build-config.test.mjs
+      - name: Audit production dependencies
+        run: npm audit --omit=dev
+
+  test:
+    needs: lint-and-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.12.0"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Karma and Jasmine with ChromeHeadless
+        run: |
+          CHROME_BIN=$(command -v google-chrome)
+          export CHROME_BIN
+          npm run test:ci
+
+  build:
+    needs: lint-and-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.12.0"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run build -- --configuration=production
+      - run: node docker/finalize-index.mjs
+      - run: test -s dist/datapulse/browser/index.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/datapulse/browser
+          retention-days: 7
+
+  docker-build:
+    needs: [test, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.12.0"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          push: false
+          load: true
+          tags: datapulse-frontend:${{ github.sha }}
+          build-args: |
+            API_URL=/api/
+            CONFIGURATION=production
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
+      - name: Check the runtime and HTTP contract
+        env:
+          IMAGE: datapulse-frontend:${{ github.sha }}
+        run: |
+          trap 'docker rm -f datapulse-frontend-check datapulse-api-check >/dev/null 2>&1 || true; docker network rm datapulse-frontend-check >/dev/null 2>&1 || true' EXIT
+          RUNTIME_UID=$(docker run --rm --entrypoint id "$IMAGE" -u)
+          test "$RUNTIME_UID" -gt 0
+          docker run --rm --entrypoint sh "$IMAGE" -c '! command -v node && ! command -v npm && test ! -d /app/node_modules'
+          if docker run --rm -e BACKEND_URL=http://bad.example/path "$IMAGE" >/dev/null 2>&1; then
+            echo 'Invalid backend origin was accepted'; exit 1
+          fi
+          INVALID_BACKEND_URL=$(printf 'http://backend:8000\ninvalid')
+          if docker run --rm -e BACKEND_URL="$INVALID_BACKEND_URL" "$IMAGE" >/dev/null 2>&1; then
+            echo 'Multiline backend origin was accepted'; exit 1
+          fi
+          docker network create datapulse-frontend-check
+          NODE_IMAGE=$(awk '/^FROM node:/{print $2; exit}' Dockerfile)
+          docker run -d --name datapulse-api-check --network datapulse-frontend-check --network-alias backend             -v "$PWD/docker/upstream-fixture.mjs:/fixture.mjs:ro" "$NODE_IMAGE" node /fixture.mjs
+          docker run -d --name datapulse-frontend-check --network datapulse-frontend-check             --cap-drop ALL --security-opt no-new-privileges:true -p 127.0.0.1:18080:8080 "$IMAGE"
+          for _ in $(seq 1 60); do
+            if [ "$(docker inspect --format '{{.State.Health.Status}}' datapulse-frontend-check)" = healthy ]; then break; fi
+            sleep 1
+          done
+          test "$(docker inspect --format '{{.State.Health.Status}}' datapulse-frontend-check)" = healthy
+          docker exec datapulse-frontend-check nginx -t
+          node docker/smoke-test.mjs http://127.0.0.1:18080
+      - name: Scan the final image with Trivy
+        # v0.36.0; immutable full SHA, not a mutable third-party tag.
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          version: v0.76.2
+          image-ref: datapulse-frontend:${{ github.sha }}
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          ignore-unfixed: false
+          exit-code: "1"
+          format: json
+          output: ${{ github.workspace }}/trivy-frontend.json
+      - name: Upload image vulnerability report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-trivy
+          path: trivy-frontend.json
+          if-no-files-found: ignore
+          retention-days: 7
