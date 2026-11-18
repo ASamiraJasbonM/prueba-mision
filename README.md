@@ -70,6 +70,8 @@ Toda normalización usa Decimal y ROUND_HALF_UP. World Bank PIB y PIB per cápit
 
 La implementación usa la tercera fila. Las tres filas están cubiertas por pruebas para dejar trazabilidad frente a la discrepancia del PDF (p. 9). En las dos primeras se verifica la composición a partir de sus scores históricos; no son políticas alternativas habilitadas en producción. La tercera se comprueba también desde los indicadores de entrada.
 
+> Nota formal: el PDF contiene una contradicción entre su pseudocódigo y su ejemplo numérico. La implementación sigue estrictamente el pseudocódigo. Para los datos del ejemplo, el pseudocódigo arroja 72 (Riesgo Moderado) en lugar de 69, debido a los umbrales de inflación y al conteo de factores negativos.
+
 Con crecimiento de −3% se cuentan seis factores: estabilidad pasa de 70 a 35 por −30 de recesión y −5 adicionales de concentración. El efecto compuesto es −10,50 (peso 30%), de 72 a 61,50; el conteo adicional por sí solo resta 5 puntos de estabilidad, equivalentes a 1,50 de IRPC. No se altera la fórmula para interpretar «5 puntos adicionales» como una caída total del IRPC. Con los seis indicadores sanos el conteo es cero.
 
 ## Portafolios y concurrencia

@@ -30,3 +30,11 @@ class IrpcTraceabilityTests(SimpleTestCase):
         self.assertEqual(result['score_estabilidad'], Decimal('70.00'))
         self.assertEqual(result['indice_compuesto'], Decimal('72.00'))
         self.assertEqual(result['nivel_riesgo'], 'MODERADO')
+
+    def test_pdf_example_contradiction_documented(self):
+        from core.services.risk import compose_irpc
+        economic = Decimal('100') - 5 - Decimal('25') - 15 - 10
+        stability = Decimal('100') - 5 - 3 * 5
+        self.assertEqual(compose_irpc(economic, Decimal('90'), stability), Decimal('69.00'))
+        result = calculate_scores(EXAMPLE, [Decimal('.8'), Decimal('-.8')], Decimal('1.5'))
+        self.assertEqual(result['indice_compuesto'], Decimal('72.00'))
