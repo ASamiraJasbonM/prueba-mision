@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { EMPTY, expand, Observable, reduce } from 'rxjs';
+import { EMPTY, expand, Observable, reduce, throwError } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Page } from '../../shared/models/dto';
 
@@ -16,6 +16,20 @@ export class ApiBaseService {
     const base = new URL(this.base, globalThis.location.origin);
     const target = new URL(url, globalThis.location.origin);
     return base.origin === target.origin && target.pathname.startsWith(base.pathname);
+  }
+  captchaImageUrl(value: unknown): string | null {
+    if (typeof value !== 'string') return null;
+    try {
+      const base = new URL(this.base, location.origin);
+      const url = new URL(value, base);
+      return ['http:', 'https:'].includes(url.protocol) && url.origin === base.origin &&
+        !url.username && !url.password && !url.search && !url.hash &&
+        /\/auth\/captcha-image\/image\/[a-f0-9]{40}\/$/.test(url.pathname) ? url.href : null;
+    } catch { return null; }
+  }
+  captchaImage(value: unknown): Observable<Blob> {
+    const url = this.captchaImageUrl(value);
+    return url ? this.http.get(url, { responseType: 'blob' }) : throwError(() => new Error('Imagen inválida.'));
   }
   get<T>(path: string, query: Query = {}): Observable<T> {
     let params = new HttpParams();

@@ -5,7 +5,7 @@ import { catchError, throwError } from 'rxjs';
 import { ApiBaseService } from '../http/api-base.service';
 import { AuthService } from '../auth/auth.service';
 import { NotificationService } from '../state/notification.service';
-import { errorMessage } from '../http/error-parser';
+import { errorCode, errorMessage, publicAuthRequest } from '../http/error-parser';
 
 export const errorInterceptor: HttpInterceptorFn = (request, next) => {
   const api = inject(ApiBaseService);
@@ -16,10 +16,10 @@ export const errorInterceptor: HttpInterceptorFn = (request, next) => {
   return next(request).pipe(
     catchError((error: unknown) => {
       if (api.isApi(request.url) && auth.sessionId === sessionId) {
-        const isLogin = /\/auth\/(login|register)\/$/.test(request.url);
+        const isLogin = publicAuthRequest(request.url) && !/\/auth\/refresh\/$/.test(request.url);
         if (error instanceof HttpErrorResponse && error.status === 401 && !isLogin) {
           const hadSession = !!auth.accessToken;
-          auth.logout();
+          auth.logout(errorCode(error) === 'session_requires_mfa' ? 'role_changed' : 'expired');
           if (hadSession) {
             notification.show('Tu sesión venció. Inicia sesión de nuevo.');
             const navigation = router.getCurrentNavigation();

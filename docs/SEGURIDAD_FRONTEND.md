@@ -155,3 +155,84 @@ TODO: endpoint estable de informes CSP, telemetría con política de privacidad 
 nonces para estilos coordinados con el hosting. Sin inventar un colector, no se
 envían reportes de usuario a terceros. Referencias: [Angular security](https://angular.dev/best-practices/security),
 [frame-ancestors y meta](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-ancestors).
+
+## 3. Sesión y logout cross-tab — U2/U3
+
+| Amenaza | Medida | Prueba | Límite |
+|---|---|---|---|
+| JWT exfiltrado por XSS | localStorage explícito y CSP/escape, nunca logs | source gate y auth-security.spec | Un XSS con ejecución aún puede leer JWT |
+| Sesión antigua en otra pestaña | storage event, invalidación de generación y navegación login/returnUrl | test de evento + dos pestañas reales | Storage bloqueado deja sesión solo en memoria |
+| Respuesta tardía revive sesión | Generación de sesión en login/refresh/MFA | pruebas existentes y nuevas tardías | No es revocación backend por sí misma |
+| Fallo temporal destruye sesión | restore503 conserva tokens; permisos esperan me válido | auth-security.spec | Usuario debe reintentar cuando se recupere API |
+| Refresh repetido | Un observable compartido, un reintento por401 | pruebas concurrentes y segundo401 | Cache/session no coordina refresh entre procesos backend |
+
+Claves: datapulse.auth.access y datapulse.auth.refresh. datapulse.auth.change
+señala que terminó una escritura de ambos valores; no contiene tokens. Se lee
+datapulse.session anterior para compatibilidad y se elimina tras guardar una sesión
+nueva. El listener se elimina al destruir el servicio; logout remoto no vuelve
+a escribir storage, evitando bucles. Cambio de cuenta en otra pestaña invalida
+la vista anterior y solicita reentrada; un refresh de la misma cuenta conserva perfil.
+
+logout acepta manual/expired/revoked/role_changed y borra ambos tokens, perfil y
+reto pendiente. Shell, interceptor y listener gestionan navegación/returnUrl en
+su contexto; logout() de estado sigue siendo utilizable sin Router (pruebas).
+No existe endpoint backend logout/audit de motivos: no se inventa ni modifica
+LogActividad. Logout manual y una revocación401 pueden limpiar credenciales;
+un error de red/503 del perfil no prueba revocación y no las elimina.
+
+JWT se adjunta solo al origen/ruta API. Login/register/refresh/captcha/imagen y
+mfa/verify-login son públicos; me, password-change y mfa/enroll/verify/disable
+**sí requieren Bearer**. No se excluye auth/* globalmente. Se admite401 genérico
+además de token_not_valid: el contrato y CORS actuales no garantizan que el cliente
+pueda leer WWW-Authenticate en otro origen. session_requires_mfa se reconoce si
+aparece, pero el backend actual emite authentication_failed ante época MFA distinta;
+no se cambia ese contrato. Tras un refresh y otro401 se termina sesión, sin bucles.
+
+TODO opcional: cookies HttpOnly con CSRF, SameSite, backend y pruebas coordinadas
+en otro cambio. No se implementa idle timeout que borre sesión sin coordinar con
+expiración/UX; la autoridad son los tokens y controles del backend.
+
+## 4. CAPTCHA y MFA mínimos funcionales — U1
+
+| Amenaza/problema | Medida | Prueba | Límite |
+|---|---|---|---|
+| CAPTCHA obligatorio bloquea la UI | Detectar captcha_required/captcha_invalid, obtener reto e imagen y enviar clave/respuesta | auth-page.spec y registro/login reales | CAPTCHA visual no es accesible para todos; falta alternativa accesible del proveedor |
+| Reto consumido | Refrescar imagen tras fallo, limpiar respuesta; clic obtiene otra | prueba de flujo CAPTCHA | Expiración/bloqueo siguen bajo autoridad backend |
+| MFA confundido con JWT | Unión validada en runtime; reto solo memoria, sin tokens hasta verify-login | auth-security + auth-page + ADMIN real TOTP | Enrolar MFA sigue siendo operación backend, sin página propia |
+| Recovery reutilizado o expuesto | Enviar como code, limpiar input tras intento; backend lo consume | prueba componente con recovery | No se muestran ni almacenan recovery codes en esta UI |
+| Registro exitoso reenviado | Recordar éxito en memoria antes del login posterior | test CAPTCHA entre registro y login | Al recargar se vuelve a login manual; no reintentar una creación automáticamente |
+
+Flujo: POST login → User/JWT o mfa_required; si reto, mostrar formulario TOTP6
+dígitos o recovery hexadecimal32. mfa_token nunca se escribe en storage ni en
+input hidden: AuthService lo mantiene en memoria, ligado a generación. POST
+mfa/verify-login envía exactamente {mfa_token,code}; no recovery_code adicional.
+Tras recibir tokens válidos consulta me antes de conceder permisos. Volver a login
+descarta reto pendiente; abandonar componente cancela solicitudes; secretos de
+formulario no se imprimen. Password mínimo12 en registro; login conserva política
+de entrada previa para no impedir acceso a una cuenta histórica válida.
+
+La prueba real usó base SQLite y claves dummy aisladas, seed y ADMIN enrolado solo
+en esa base. Se completaron TOTP, registro con CAPTCHA y login con CAPTCHA tras
+tres fallos401. Imagen blob cargada y dashboard sin violaciones CSP. La segunda
+pestaña regresó al login sin identidad antigua tras salir en la primera.
+
+TODO opcional: página ADMIN de enrolamiento/deshabilitación con QR y entrega de
+recovery codes una sola vez. No se añade una ruta seguridad con permisos ANALISTA:
+los endpoints MFA de administración son exclusivamente ADMIN. Tampoco se publica
+un endpoint nuevo ni se modifica el seed habitual.
+
+## 5. Errores y datos sin fugas — U1/U2
+
+| Amenaza | Medida | Prueba | Límite |
+|---|---|---|---|
+| Stack/secretos en pantalla | Nunca aplanar details;500 usa mensaje fijo,400/409 solo mensaje público acotado | security-interceptors.spec | Un mensaje público validación aún puede contener datos del usuario; se escapa como texto |
+| Logs de tokens/errores completos | Sin cuerpos, cabeceras ni objeto Error en consola; bootstrap usa texto fijo | source gate + main.ts | No hay colector cliente de errorId; no fingir correlación inexistente |
+| Abuso/reintentos | Retry-After segundos o fecha, cuenta atrás y botones deshabilitados | tests contador30s/900s/fecha | Control cliente complementa, no reemplaza cuotas backend |
+| Repetir escritura en409 | Preservar reread/fresh/version y exigir decisión del usuario | suite previa + interceptor no retry409 | Usuario debe revisar conflicto; no se decide una inversión automáticamente |
+
+No se registran details ni siquiera en desarrollo: se omite la excepción opcional
+del prompt porque no puede garantizarse que un detalle esté libre de credenciales.
+401 protegido intenta refresh una vez;401 de login/MFA se queda en el formulario;
+403/404/409/429/5xx tienen mensajes acotados y acciones. LoadingInterceptor mantiene
+finalize por petición y no altera el contador ante errores. Retry-After no es un
+timer de seguridad independiente y refrescar el navegador no evita el bloqueo servidor.
