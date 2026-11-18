@@ -16,7 +16,10 @@ concurrency:
 # Dummy values only. No .env, personal API keys, or deployment credentials in CI.
 # DEBUG stays false; redirect is explicitly off for HTTP test-client requests.
 env:
-  SECRET_KEY: ci-only-dummy-key-not-for-deployment-2026
+  SECRET_KEY: ci-only-dummy-key-not-for-deployment-security-checks-2026-at-least-fifty
+  AUDIT_HMAC_KEY: ci-only-audit-key-never-for-production
+  CAPTCHA_ENFORCED: "False"
+  API_DOCS_ENABLED: "True"
   DEBUG: "False"
   SECURE_SSL_REDIRECT: "False"
   ALLOWED_HOSTS: "*"
@@ -42,7 +45,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - uses: astral-sh/setup-uv@v9
+      - uses: astral-sh/setup-uv@v7
         with:
           version: "0.10.11"
           enable-cache: true
@@ -50,6 +53,17 @@ jobs:
       - run: uv lock --check
       - run: uv sync --frozen
       - run: uv run --frozen python backend/manage.py check
+      - name: Production deployment checks
+        env:
+          SECURE_SSL_REDIRECT: "True"
+          API_DOCS_ENABLED: "False"
+          CAPTCHA_ENFORCED: "True"
+        run: uv run --frozen python backend/manage.py check --deploy --fail-level WARNING
+      - name: Audit the locked production dependency graph
+        run: |
+          uv export --frozen --no-dev --no-hashes --output-file /tmp/req.audit.txt
+          uv run --frozen pip-audit -r /tmp/req.audit.txt --strict --no-deps --disable-pip
+      - run: uv run --frozen bandit -r backend -ll -x backend/core/migrations,backend/core/tests
       - run: uv run --frozen python backend/manage.py makemigrations --check --dry-run
       - run: uv run --frozen python scripts/check_numeric_policy.py
       - run: uv run --frozen python backend/manage.py spectacular --validate --fail-on-warn --file docs/openapi.yaml
@@ -64,7 +78,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - uses: astral-sh/setup-uv@v9
+      - uses: astral-sh/setup-uv@v7
         with:
           version: "0.10.11"
           enable-cache: true
@@ -98,7 +112,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - uses: astral-sh/setup-uv@v9
+      - uses: astral-sh/setup-uv@v7
         with:
           version: "0.10.11"
           enable-cache: true
@@ -106,6 +120,7 @@ jobs:
       - run: uv lock --check
       - run: uv sync --frozen
       - run: uv run --frozen python backend/manage.py migrate --noinput
+      - run: uv run --frozen python backend/manage.py verificar_auditoria
       - name: Run the complete suite and reject skips
         run: |
           uv run --frozen python backend/manage.py test -v 2 2>&1 | tee /tmp/postgresql-tests.log
@@ -136,6 +151,42 @@ jobs:
           IMAGE: datapulse-backend:${{ github.sha }}
         run: |
           test "$(docker run --rm "$IMAGE" whoami)" = appuser
-          docker run --rm -e SECRET_KEY -e DEBUG -e SECURE_SSL_REDIRECT -e ALLOWED_HOSTS \
+          docker run --rm -e SECRET_KEY -e AUDIT_HMAC_KEY -e DEBUG -e SECURE_SSL_REDIRECT -e ALLOWED_HOSTS \
             -e DATABASE_URL=sqlite:////tmp/datapulse-image.sqlite3 \
             "$IMAGE" uv run --frozen --no-sync --no-dev python backend/manage.py check
+      - name: Export the exact image for security scanning
+        run: docker save datapulse-backend:${{ github.sha }} -o /tmp/backend-image.tar
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-image
+          path: /tmp/backend-image.tar
+          retention-days: 1
+
+  security-scan:
+    needs: docker-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: backend-image
+          path: /tmp/backend-image
+      - name: Scan the built image without publishing it
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          version: v0.76.2
+          input: /tmp/backend-image/backend-image.tar
+          scanners: vuln
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+          format: json
+          output: trivy-backend.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-security-report
+          path: trivy-backend.json
+          if-no-files-found: ignore
+          retention-days: 7
