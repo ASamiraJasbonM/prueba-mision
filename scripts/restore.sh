@@ -7,6 +7,8 @@ umask 077
 : "${HEALTH_URL:?Set the restored backend health URL}"
 [ "$PGDATABASE" = "$RESTORE_CONFIRM_DATABASE" ] || { echo 'Target confirmation mismatch' >&2; exit 1; }
 started=$(date +%s)
+# Refuse to migrate/verify a different database from the restore destination.
+uv run --frozen python backend/manage.py shell -c "import os; from django.conf import settings; d=settings.DATABASES['default']; assert d['ENGINE']=='django.db.backends.postgresql' and d['NAME']==os.environ['PGDATABASE'] and d['HOST']==os.environ.get('PGHOST','') and str(d.get('PORT') or 5432)==os.environ.get('PGPORT','5432'), 'Django and PG restore destinations differ'"
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT HUP INT TERM
 archive=${1:-}
@@ -15,6 +17,7 @@ if [ -z "$archive" ]; then
   case "$BACKUP_BUCKET" in s3://*) ;; *) exit 1;; esac
   name=$(aws s3 ls "${BACKUP_BUCKET%/}/" | awk '/datapulse-[0-9]+T[0-9]+Z.dump.gpg$/ {print $4}' | sort | tail -n 1)
   [ -n "$name" ] || { echo 'No backup found' >&2; exit 1; }
+  printf '%s\n' "$name" | grep -Eq '^datapulse-[0-9]{8}T[0-9]{6}Z\.dump\.gpg$' || { echo 'Invalid backup object name' >&2; exit 1; }
   aws s3 cp "${BACKUP_BUCKET%/}/$name" "$work/$name" --only-show-errors
   aws s3 cp "${BACKUP_BUCKET%/}/$name.sha256" "$work/$name.sha256" --only-show-errors
 else

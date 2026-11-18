@@ -3,6 +3,9 @@ set -eu
 umask 077
 : "${PGDATABASE:?Set PGDATABASE, PGHOST, PGUSER and PGPASSWORD securely}"
 : "${BACKUP_GPG_KEY:?Set BACKUP_GPG_KEY outside source control}"
+server_major=$(psql --no-psqlrc --tuples-only --no-align -c 'SHOW server_version_num' | awk '{print int($1/10000)}')
+client_major=$(pg_dump --version | sed -n 's/.* \([0-9][0-9]*\)\..*/\1/p')
+[ "$server_major" = "$client_major" ] || { echo 'Use pg_dump with the same major version as the server' >&2; exit 1; }
 destination=${BACKUP_DIR:-backups}
 mkdir -p "$destination"
 work=$(mktemp -d)
