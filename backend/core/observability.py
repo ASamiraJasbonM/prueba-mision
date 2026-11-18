@@ -13,7 +13,7 @@ logger = logging.getLogger('datapulse')
 class JsonFormatter(logging.Formatter):
     def format(self, record):
         result = {'timestamp': timezone.now().isoformat(), 'level': record.levelname, 'event': record.getMessage()}
-        for key in ['metodo', 'path', 'usuario_id', 'ip', 'duracion_ms', 'status', 'pais', 'operacion', 'error_code', 'actualizados', 'errores', 'ok', 'broken_id', 'checked', 'cause']:
+        for key in ['metodo', 'path', 'usuario_id', 'ip', 'duracion_ms', 'status', 'pais', 'operacion', 'error_code', 'actualizados', 'errores', 'ok', 'broken_id', 'checked', 'cause', 'paises_procesados', 'paises']:
             if hasattr(record, key):
                 result[key] = getattr(record, key)
         return json.dumps(result, ensure_ascii=False)

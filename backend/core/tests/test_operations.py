@@ -23,6 +23,22 @@ class OperationTests(APICase):
         self.assertNotIn('secret-value', str(requests[0].__dict__))
         self.assertNotIn('secret-token', str(requests[0].__dict__))
 
+    def test_sync_fin_log_includes_processed_countries(self):
+        import json
+        from core.services.sync import sync_indicators
+        from core.observability import JsonFormatter
+        payload = [{'pages': 1}, [{'date': '2025', 'value': Decimal('4')}]]
+        with patch('core.services.sync.get_json', return_value=payload):
+            with self.assertLogs('datapulse', level='INFO') as captured:
+                report = sync_indicators()
+        fin = [record for record in captured.records if record.msg == 'sync_indicadores_fin']
+        self.assertEqual(len(fin), 1)
+        self.assertEqual(fin[0].paises_procesados, report['paises_procesados'])
+        self.assertEqual(fin[0].paises, report['paises'])
+        parsed = json.loads(JsonFormatter().format(fin[0]))
+        self.assertEqual(parsed['paises_procesados'], report['paises_procesados'])
+        self.assertEqual(parsed['paises'], report['paises'])
+
     def test_sync_command_chains_risk_and_is_repeatable(self):
         payload = [{'pages': 1}, [{'date': '2025', 'value': Decimal('4')}]]
         with patch('core.services.sync.get_json', return_value=payload):

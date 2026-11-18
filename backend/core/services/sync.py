@@ -50,7 +50,7 @@ def persist_indicator(pais, tipo, year, value, unit):
 
 
 def sync_indicators():
-    report = {'paises_procesados': 0, 'actualizados': 0, 'errores': []}
+    report = {'paises_procesados': 0, 'actualizados': 0, 'errores': [], 'paises': []}
     year = timezone.now().year - 1
     logger.info('sync_indicadores_inicio')
     for pais in Pais.objects.all():
@@ -81,8 +81,9 @@ def sync_indicators():
             except SYNC_ERRORS as exc:
                 report_error(report, pais.pk, tipo, exc)
         report['paises_procesados'] += 1
+        report['paises'].append(pais.pk)
         indicator_alert(pais, changed_rows)
-    logger.info('sync_indicadores_fin', extra={'actualizados': report['actualizados'], 'errores': len(report['errores'])})
+    logger.info('sync_indicadores_fin', extra={'actualizados': report['actualizados'], 'errores': len(report['errores']), 'paises_procesados': report['paises_procesados'], 'paises': report['paises']})
     return report
 
 
