@@ -1,13 +1,42 @@
+# Python / Django
 .venv/
-.env
 __pycache__/
 *.py[cod]
 *.sqlite3
 *.sqlite3-*
-node_modules/
-tmp/
-backend/staticfiles/
-backend/schema.yml
 *.log
 .coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+backend/staticfiles/
+backend/schema.yml
 
+docs/
+
+# Node / Angular (frontend)
+frontend/
+node_modules/
+frontend/dist/
+frontend/.angular/
+frontend/coverage/
+frontend/tmp/
+
+# Environment & secrets
+.env
+!.env.example
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Misc
+tmp/
+docs/_build/
+*.egg-info/
+dist/
