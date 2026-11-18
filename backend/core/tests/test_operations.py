@@ -39,6 +39,15 @@ class OperationTests(APICase):
         self.assertEqual(parsed['paises_procesados'], report['paises_procesados'])
         self.assertEqual(parsed['paises'], report['paises'])
 
+    def test_indicator_sync_creates_info_alert(self):
+        from core.models import Alerta
+        from core.services.sync import sync_indicators
+        payload = [{'pages': 1}, [{'date': '2025', 'value': Decimal('4')}]]
+        with patch('core.services.sync.get_json', return_value=payload):
+            sync_indicators()
+        alert = Alerta.objects.get(tipo_alerta='INDICADOR', severidad='INFO')
+        self.assertEqual(alert.pais, self.pais)
+
     def test_sync_command_chains_risk_and_is_repeatable(self):
         payload = [{'pages': 1}, [{'date': '2025', 'value': Decimal('4')}]]
         with patch('core.services.sync.get_json', return_value=payload):

@@ -58,6 +58,39 @@ class DataTests(APICase):
         self.assertEqual(rate.variacion_porcentual, Decimal('25.0000'))
         self.assertEqual(TipoCambio.objects.count(), 2)
 
+    def test_sync_partial_failure_across_countries(self):
+        import requests
+        from core.models import Moneda, Pais
+        from core.services.sync import sync_indicators
+        for code in ['BR', 'MX', 'AR', 'CL', 'PE', 'EC', 'UY', 'PY', 'PA']:
+            moneda, _ = Moneda.objects.get_or_create(codigo=code, defaults={'nombre': code})
+            Pais.objects.create(codigo_iso=code, nombre=code, moneda=moneda, region='ANDINA', latitud='0', longitud='0', poblacion=1)
+        self.assertEqual(Pais.objects.count(), 10)
+        failures = {'AR': 1}
+        def side_effect(url, params=None, headers=None):
+            if '/AR/' in url and failures['AR'] > 0:
+                failures['AR'] -= 1
+                raise requests.Timeout('timeout AR')
+            return [{'pages': 1}, [{'date': '2025', 'value': Decimal('123456')}]]
+        with patch('core.services.sync.get_json', side_effect=side_effect):
+            report = sync_indicators()
+        self.assertEqual(len(report['errores']), 1)
+        self.assertEqual(report['errores'][0]['pais'], 'AR')
+        self.assertEqual(IndicadorEconomico.objects.exclude(pais_id='AR').count(), 9 * 6)
+        self.assertEqual(IndicadorEconomico.objects.filter(pais_id='AR').count(), 5)
+
+    def test_exchange_alert_thresholds(self):
+        from core.models import Alerta
+        from core.services.alerts import exchange_alert
+        base = date(2026, 11, 17)
+        cases = [(Decimal('3.0000'), False), (Decimal('3.0100'), True), (Decimal('-3.0100'), True)]
+        for index, (variation, should_alert) in enumerate(cases):
+            with self.subTest(variation=variation):
+                exchange = TipoCambio.objects.create(moneda_origen=self.pais.moneda, fecha=base + timedelta(days=index), tasa='0.000250000000', variacion_porcentual=variation)
+                exchange_alert(self.pais, exchange)
+                self.assertEqual(Alerta.objects.filter(tipo_alerta='TIPO_CAMBIO').exists(), should_alert)
+                Alerta.objects.filter(tipo_alerta='TIPO_CAMBIO').delete()
+
 
 class UnitTests(SimpleTestCase):
     def test_scale_conversion_uses_half_up(self):
