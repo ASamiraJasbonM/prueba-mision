@@ -1,6 +1,6 @@
-# DataPulse Latam — backend
+# DataPulse Latam — backend y frontend Angular
 
-Implementación por etapas de Django + DRF. Frontend reservado; sin despliegue remoto en este encargo.
+Implementación por etapas de Django + DRF con frontend Angular. Despliegue remoto no incluido en este encargo.
 
 ## Desarrollo local (PowerShell, Python 3.12 y uv 0.10.11)
 
@@ -18,7 +18,7 @@ La configuración lee `.env` desde la raíz. `SECRET_KEY` es obligatorio. SQLite
 
 uv crea y mantiene `.venv`; no se instala el proyecto con pip. `pyproject.toml` declara las dependencias directas y las restricciones transitivas verificadas; `uv.lock` fija resolución, fuentes y hashes. Python queda acotado a `>=3.12,<3.13` para conservar el entorno validado. Las pruebas actuales no requieren paquetes adicionales: el grupo `dev` está vacío. Ver [gestión de dependencias con uv](docs/DEPENDENCIAS_UV.md).
 
-API local: http://127.0.0.1:8000/api/ ; Swagger: http://127.0.0.1:8000/api/docs/ . No hay URLs públicas: el alcance de este encargo es backend local, sin frontend ni publicación.
+API local: http://127.0.0.1:8000/api/ ; Swagger: http://127.0.0.1:8000/api/docs/ . Frontend local: http://127.0.0.1:4200 (Angular) o http://127.0.0.1:8080 (Docker). No hay URLs públicas: el alcance de este encargo es local, sin publicación.
 
 Documentación: [contrato y payloads](docs/API.md), [arquitectura y ER](docs/ARQUITECTURA.md), [fuentes verificadas](docs/FUENTES.md), [resultados por etapa](docs/ETAPAS.md).
 
@@ -30,7 +30,7 @@ Evidencia por etapa en `docs/ETAPAS.md`. El prompt backend del usuario tiene pri
 
 La revisión posterior está en [Cierre de observaciones P1–P9](docs/CIERRE_OBSERVACIONES.md), con commits, decisiones y [salida completa de los cinco comandos finales](docs/observaciones/P9.md). Los resultados históricos 0–10 se conservan como evidencia de la evolución; el contrato vigente incluye las correcciones posteriores.
 
-Alcance de este encargo: backend completo. No incluye frontend Angular, despliegue público ni video; son artefactos fuera del alcance acordado, no olvidos. El PDF asigna 35% a la parte técnica de frontend y 10% al video dentro de los entregables (son esquemas de ponderación distintos). La implementación abarca la parte técnica backend descrita como 40% y los componentes de backend del bloque de integración/tareas descrito como 25%; no se afirma haber obtenido esos puntajes ni cumplir el 100% del PDF. El despliegue público sigue pendiente: `compose.yaml` prepara PostgreSQL local, pero no proporciona frontend, URL pública, HTTPS ni video. La validación real en PostgreSQL y contra proveedores se declara pendiente abajo.
+Alcance de este encargo: backend completo y frontend Angular (ver `frontend/README.md`). El PDF asigna 35% a la parte técnica de frontend y 10% al video dentro de los entregables (son esquemas de ponderación distintos). La implementación abarca la parte técnica backend descrita como 40% y los componentes de backend del bloque de integración/tareas descrito como 25%; no se afirma haber obtenido esos puntajes ni cumplir el 100% del PDF. El despliegue público sigue pendiente: `compose.yaml` prepara PostgreSQL local y frontend Docker, pero no proporciona URL pública, HTTPS ni video. La validación real en PostgreSQL está documentada abajo (61 pruebas, sin skips); la validación contra proveedores se declara pendiente.
 
 ## Base de datos y precisión
 
@@ -72,7 +72,7 @@ Con crecimiento de −3% se cuentan seis factores: estabilidad pasa de 70 a 35 p
 
 ## Portafolios y concurrencia
 
-Público significa visible para otros, editable solo por dueño ANALISTA o ADMIN. VIEWER consulta/exporta pero no escribe. Todos los cambios bloquean el portafolio con `select_for_update()` en `transaction.atomic()`; también crear posiciones. PUT y POST de posiciones incluyen `version` actual del portafolio en JSON. DELETE de portafolio y de posición exigen la cabecera `If-Match: "N"`, donde N es la versión del portafolio padre; no usan body ni query param. Cada escritura incrementa versión; un valor antiguo devuelve 409 y revierte toda la transacción. GET detalle/resumen devuelve versión y `ETag: "N"`. CORS permite If-Match y expone ETag a Angular. El control de versión se prueba en SQLite; los bloqueos reales requieren PostgreSQL.
+Público significa visible para otros, editable solo por dueño ANALISTA o ADMIN. VIEWER consulta/exporta pero no escribe. Todos los cambios bloquean el portafolio con `select_for_update()` en `transaction.atomic()`; también crear posiciones. PUT y POST de posiciones incluyen `version` actual del portafolio en JSON. DELETE de portafolio y de posición exigen la cabecera `If-Match: "N"`, donde N es la versión del portafolio padre; no usan body ni query param. Cada escritura incrementa versión; un valor antiguo devuelve 409 y revierte toda la transacción. GET detalle/resumen devuelve versión y `ETag: "N"`. CORS permite If-Match y expone ETag a Angular. El control de versión se prueba en SQLite y en PostgreSQL (61 pruebas, sin skips). Los bloqueos reales de concurrencia requieren PostgreSQL.
 
 Posiciones activas tienen salida null; el límite de USD 50 millones y la distribución se calculan sobre activas. Editar excluye la posición actual del conteo y total. Borrado de portafolio es lógico y su nombre permanece reservado por usuario. La validación asíncrona usa GET `/api/portafolios/nombre-disponible/?nombre=...&excluir_id=...`.
 
@@ -135,7 +135,7 @@ El runner usa base efímera limpia. Tests verifican constraints, auth/roles, con
 
 Para PostgreSQL local con Docker activo: definir `POSTGRES_PASSWORD` en `.env`, ejecutar `docker compose up -d db` y establecer `DATABASE_URL=postgresql://datapulse:TU_PASSWORD@localhost:5432/datapulse` (escapar caracteres reservados en URL). Ejecutar migrate, seed y toda la suite de nuevo. La cuenta local necesita permiso de crear la base efímera de pruebas; la cuenta creada por el contenedor lo tiene. El volumen conserva datos entre reinicios; no usar `down -v` si se desean conservar.
 
-No se pudo probar ese motor en esta sesión porque Docker no tenía daemon disponible. No se han ejecutado sincronizaciones reales con claves personales ni instalado un scheduler. Configurar PostgreSQL, la clave REST Countries y cron antes del despliegue, y cumplir la atribución de ExchangeRate-API descrita en docs/FUENTES.md.
+PostgreSQL validado: 61 pruebas aprobadas, sin skips (evidencia en `frontend/README.md` y docs). No se han ejecutado sincronizaciones reales con claves personales ni instalado un scheduler. Configurar PostgreSQL, la clave REST Countries y cron antes del despliegue, y cumplir la atribución de ExchangeRate-API descrita en docs/FUENTES.md.
 
 
 - Etapa 00: Bootstrap, health y OpenAPI base
