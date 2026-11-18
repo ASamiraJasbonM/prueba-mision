@@ -4,8 +4,8 @@ version = "1.0.0"
 description = "Backend Django y DRF de DataPulse Latam"
 requires-python = ">=3.12,<3.13"
 dependencies = [
-    "Django==5.2.19",
-    "djangorestframework==3.18.2",
+    "Django==6.1.3",
+    "djangorestframework==3.18.3",
     "djangorestframework-simplejwt==5.5.1",
     "django-cors-headers==4.9.0",
     "django-environ==0.14.0",
