@@ -116,6 +116,12 @@ La [política de seguridad](../docs/SEGURIDAD_FRONTEND.md) detalla la CSP y cabe
 
 `.github/workflows/frontend-ci.yml` tiene cuatro jobs: lint-and-check, test, build y docker-build. Usa setup-node v4 con Node 22.12.0 (mínimo soportado de esta rama), caché npm por el lockfile y `npm ci`. No cambia package.json ni incorpora uv. No existe un target ESLint: la comprobación estática utiliza los proyectos TypeScript estrictos existentes y la sintaxis de los scripts de infraestructura; no se simula un `ng lint` inexistente.
 
+Se activa en push y PR hacia `feat/backend-datapulse` (rama predeterminada actual)
+o `main`, cuando cambian frontend, su workflow, Compose, su política de seguridad
+o `.gitattributes` (terminaciones LF de los scripts). También admite ejecución
+manual mediante `workflow_dispatch`. Los filtros de PR se refieren a la rama de
+destino, no a la rama de origen.
+
 El job de imagen usa Buildx y caché gha, `push: false`, prueba HTTP contra un upstream efímero y escanea el runtime con Trivy 0.76.2, acción fijada al commit de v0.36.0. HIGH/CRITICAL hacen fallar el job, sin ignorar los no corregidos. Se conserva el reporte JSON como artifact. Solo hay permiso contents:read; no se publica nada en GHCR ni se solicitan credenciales de despliegue.
 
 Los scripts `docker/upstream-fixture.mjs` y `docker/smoke-test.mjs` son verificaciones de infraestructura: rutas SPA, cabeceras, gzip, cache, 404, JWT/If-Match, cuerpo decimal, DELETE y PDF. La fixture queda fuera de la imagen final. No se añadió una suite E2E de Angular.

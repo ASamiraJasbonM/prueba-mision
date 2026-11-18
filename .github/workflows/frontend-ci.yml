@@ -2,20 +2,22 @@ name: Frontend CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/backend-datapulse]
     paths:
       [
         "frontend/**",
         ".github/workflows/frontend-ci.yml",
+        ".gitattributes",
         "compose.yaml",
         "docs/SEGURIDAD_FRONTEND.md",
       ]
   pull_request:
-    branches: [main]
+    branches: [main, feat/backend-datapulse]
     paths:
       [
         "frontend/**",
         ".github/workflows/frontend-ci.yml",
+        ".gitattributes",
         "compose.yaml",
         "docs/SEGURIDAD_FRONTEND.md",
       ]
