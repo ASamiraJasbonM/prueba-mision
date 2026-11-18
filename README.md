@@ -32,6 +32,8 @@ La revisión posterior está en [Cierre de observaciones P1–P9](docs/CIERRE_OB
 
 Alcance de este encargo: backend completo y frontend Angular (ver `frontend/README.md`). El PDF asigna 35% a la parte técnica de frontend y 10% al video dentro de los entregables (son esquemas de ponderación distintos). La implementación abarca la parte técnica backend descrita como 40% y los componentes de backend del bloque de integración/tareas descrito como 25%; no se afirma haber obtenido esos puntajes ni cumplir el 100% del PDF. El despliegue público sigue pendiente: `compose.yaml` prepara PostgreSQL local y frontend Docker, pero no proporciona URL pública, HTTPS ni video. La validación real en PostgreSQL está documentada abajo (61 pruebas, sin skips); la validación contra proveedores se declara pendiente.
 
+> Advertencia: el despliegue en Render usa el plan gratuito, el cual expira a los 30 días. Si la URL no responde, el proyecto está dockerizado y se puede levantar en local con `docker compose up`.
+
 ## Base de datos y precisión
 
 PostgreSQL es el motor de referencia para precisión decimal y concurrencia. SQLite solo sirve para demostración local: su afinidad NUMERIC puede perder precisión en valores grandes y `select_for_update()` no bloquea filas. Los campos y toda la lógica de negocio usan Decimal; las garantías de PostgreSQL deben verificarse contra ese motor antes de desplegar. Las pruebas locales no equivalen a una validación de concurrencia real en PostgreSQL.
