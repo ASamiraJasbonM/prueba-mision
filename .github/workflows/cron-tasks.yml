@@ -1,0 +1,39 @@
+name: Cron de sincronización programada
+
+# Acredita la ejecución programada (Sección 3.1) además de la sincronización
+# bajo demanda disponible vía POST /api/paises/sync-indicadores/.
+#
+# Este workflow está listo para producción pero requiere credenciales de
+# despliegue que no se versionan:
+#   - DATAPULSE_API_URL   : URL pública del backend (p. ej. https://api.ejemplo.com)
+#   - DATAPULSE_SYNC_TOKEN: JWT de acceso de un usuario ADMIN o token de servicio.
+#
+# Nota: el despliegue en Render usa plan gratuito y expira a los 30 días. Si la
+# URL no responde, levantar el proyecto en local con `docker compose up`.
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync-indicadores:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Sincronizar indicadores (bajo demanda programada)
+        env:
+          API_URL: ${{ secrets.DATAPULSE_API_URL }}
+          SYNC_TOKEN: ${{ secrets.DATAPULSE_SYNC_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${API_URL:-}" ] || [ -z "${SYNC_TOKEN:-}" ]; then
+            echo "::warning::Faltan DATAPULSE_API_URL o DATAPULSE_SYNC_TOKEN. Configure los secretos de despliegue."
+            exit 0
+          fi
+          curl -fsS -X POST "${API_URL}/api/paises/sync-indicadores/" \
+            -H "Authorization: Bearer ${SYNC_TOKEN}" \
+            -H "Content-Type: application/json"
