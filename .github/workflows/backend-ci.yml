@@ -18,6 +18,8 @@ concurrency:
 env:
   SECRET_KEY: ci-only-dummy-key-not-for-deployment-security-checks-2026-at-least-fifty
   AUDIT_HMAC_KEY: ci-only-audit-key-never-for-production
+  FIELD_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+  MFA_KEY: ci-only-mfa-key-never-for-production
   CAPTCHA_ENFORCED: "False"
   API_DOCS_ENABLED: "True"
   DEBUG: "False"
@@ -47,7 +49,7 @@ jobs:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@v7
         with:
-          version: "0.10.11"
+          version: "0.13.9"
           enable-cache: true
           cache-dependency-glob: uv.lock
       - run: uv lock --check
@@ -80,7 +82,7 @@ jobs:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@v7
         with:
-          version: "0.10.11"
+          version: "0.13.9"
           enable-cache: true
           cache-dependency-glob: uv.lock
       - run: uv lock --check
@@ -114,7 +116,7 @@ jobs:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@v7
         with:
-          version: "0.10.11"
+          version: "0.13.9"
           enable-cache: true
           cache-dependency-glob: uv.lock
       - run: uv lock --check
@@ -151,7 +153,7 @@ jobs:
           IMAGE: datapulse-backend:${{ github.sha }}
         run: |
           test "$(docker run --rm "$IMAGE" whoami)" = appuser
-          docker run --rm -e SECRET_KEY -e AUDIT_HMAC_KEY -e DEBUG -e SECURE_SSL_REDIRECT -e ALLOWED_HOSTS \
+          docker run --rm -e SECRET_KEY -e AUDIT_HMAC_KEY -e FIELD_ENCRYPTION_KEY -e MFA_KEY -e DEBUG -e SECURE_SSL_REDIRECT -e ALLOWED_HOSTS \
             -e DATABASE_URL=sqlite:////tmp/datapulse-image.sqlite3 \
             "$IMAGE" uv run --frozen --no-sync --no-dev python backend/manage.py check
       - name: Export the exact image for security scanning

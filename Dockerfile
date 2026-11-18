@@ -1,4 +1,4 @@
-FROM ghcr.io/astral-sh/uv:0.10.11 AS uv
+FROM ghcr.io/astral-sh/uv:0.13.9 AS uv
 
 FROM python:3.12-slim AS builder
 
@@ -11,7 +11,7 @@ WORKDIR /app
 COPY --from=uv /uv /usr/local/bin/uv
 COPY pyproject.toml uv.lock .python-version ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-build
+    uv sync --frozen --no-dev
 
 FROM python:3.12-slim AS runtime
 
@@ -25,7 +25,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     UV_LINK_MODE=copy
 WORKDIR /app
 
-RUN groupadd --system --gid 10001 appuser \
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system --gid 10001 appuser \
     && useradd --system --uid 10001 --gid appuser --create-home appuser \
     && mkdir -p /app/docs /app/data \
     && chown -R appuser:appuser /app

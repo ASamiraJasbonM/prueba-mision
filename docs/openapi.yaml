@@ -74,6 +74,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedAlertaList'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/alertas/{id}/:
     get:
       operationId: alertas_retrieve
@@ -95,6 +107,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Alerta'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/alertas/{id}/leer/:
     put:
       operationId: alertas_leer_update
@@ -116,6 +140,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Alerta'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/alertas/leer-todas/:
     put:
       operationId: alertas_leer_todas_update
@@ -130,6 +166,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Marked'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/alertas/resumen/:
     get:
       operationId: alertas_resumen_retrieve
@@ -144,6 +192,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/AlertSummary'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/auditoria/:
     get:
       operationId: auditoria_list
@@ -209,6 +269,44 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedLogActividadList'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
+  /api/auth/captcha/:
+    get:
+      operationId: auth_captcha_retrieve
+      tags:
+      - auth
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Captcha'
+          description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/auth/login/:
     post:
       operationId: auth_login_create
@@ -234,8 +332,34 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Login'
+                $ref: '#/components/schemas/LoginResponse'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
+        '400':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/auth/me/:
     get:
       operationId: auth_me_retrieve
@@ -250,6 +374,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Profile'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
     put:
       operationId: auth_me_update
       tags:
@@ -275,6 +411,258 @@ paths:
               schema:
                 $ref: '#/components/schemas/Profile'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
+  /api/auth/mfa/disable/:
+    post:
+      operationId: auth_mfa_disable_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Code'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Code'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Code'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
+        '400':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/auth/mfa/enroll/:
+    post:
+      operationId: auth_mfa_enroll_create
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Enrollment'
+          description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
+        '400':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/auth/mfa/verify/:
+    post:
+      operationId: auth_mfa_verify_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Code'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Code'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Code'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recovery'
+          description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
+        '400':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/auth/mfa/verify-login/:
+    post:
+      operationId: auth_mfa_verify_login_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginCode'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginCode'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginCode'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+          description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
+        '400':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/auth/password-change/:
+    post:
+      operationId: auth_password_change_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
+        '400':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/auth/refresh/:
     post:
       operationId: auth_refresh_create
@@ -302,6 +690,32 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenRefresh'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
+        '400':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/auth/register/:
     post:
       operationId: auth_register_create
@@ -328,6 +742,32 @@ paths:
               schema:
                 $ref: '#/components/schemas/Register'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
+        '400':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/dashboard/mapa/:
     get:
       operationId: dashboard_mapa_list
@@ -355,6 +795,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedMapList'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/dashboard/resumen/:
     get:
       operationId: dashboard_resumen_retrieve
@@ -369,6 +821,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/DashboardSummary'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/dashboard/tendencias/:
     get:
       operationId: dashboard_tendencias_list
@@ -421,6 +885,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedTrendList'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/health/:
     get:
       operationId: health_retrieve
@@ -429,6 +905,18 @@ paths:
       responses:
         '200':
           description: No response body
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/paises/:
     get:
       operationId: paises_list
@@ -482,6 +970,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedPaisList'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/paises/{codigo_iso}/:
     get:
       operationId: paises_retrieve
@@ -503,6 +1003,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaisDetalle'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/paises/{codigo_iso}/indicadores/:
     get:
       operationId: paises_indicadores_list
@@ -569,6 +1081,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedIndicadorList'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/paises/{codigo_iso}/tipo-cambio/:
     get:
       operationId: paises_tipo_cambio_list
@@ -623,6 +1147,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedCambioList'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/paises/sync-indicadores/:
     post:
       operationId: paises_sync_indicadores_create
@@ -637,6 +1173,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/SyncReport'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        required: false
+        schema:
+          type: string
+          maxLength: 128
+        description: 'Por usuario y endpoint; mismo cuerpo durante 5 minutos. Otro
+          cuerpo: 409.'
   /api/portafolios/:
     get:
       operationId: portafolios_list
@@ -680,6 +1237,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedPortfolioList'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
     post:
       operationId: portafolios_create
       tags:
@@ -705,6 +1274,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Portfolio'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/portafolios/{id}/:
     get:
       operationId: portafolios_retrieve
@@ -726,6 +1307,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/PortfolioDetail'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
     put:
       operationId: portafolios_update
       parameters:
@@ -758,6 +1351,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Portfolio'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
     delete:
       operationId: portafolios_destroy
       parameters:
@@ -794,6 +1399,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/portafolios/{id}/export/pdf/:
     get:
       operationId: portafolios_export_pdf_retrieve
@@ -816,6 +1433,18 @@ paths:
                 type: string
                 format: binary
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/portafolios/{id}/posiciones/:
     post:
       operationId: portafolios_posiciones_create
@@ -849,6 +1478,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Position'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/portafolios/{id}/posiciones/{posicion_id}/:
     put:
       operationId: portafolios_posiciones_update
@@ -893,6 +1534,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
     delete:
       operationId: portafolios_posiciones_destroy
       parameters:
@@ -938,6 +1591,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/portafolios/{id}/resumen/:
     get:
       operationId: portafolios_resumen_retrieve
@@ -959,6 +1624,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/PortfolioSummary'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/portafolios/nombre-disponible/:
     get:
       operationId: portafolios_nombre_disponible_retrieve
@@ -986,6 +1663,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Availability'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/riesgo/:
     get:
       operationId: riesgo_list
@@ -1049,6 +1738,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedRiesgoList'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/riesgo/{codigo_iso}/:
     get:
       operationId: riesgo_retrieve
@@ -1069,6 +1770,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/RiesgoDetail'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/riesgo/{codigo_iso}/historico/:
     get:
       operationId: riesgo_historico_retrieve
@@ -1089,6 +1802,18 @@ paths:
               schema:
                 $ref: '#/components/schemas/Riesgo'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/riesgo/calcular/:
     post:
       operationId: riesgo_calcular_create
@@ -1103,6 +1828,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/RecalculateReport'
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        required: false
+        schema:
+          type: string
+          maxLength: 128
+        description: 'Por usuario y endpoint; mismo cuerpo durante 5 minutos. Otro
+          cuerpo: 409.'
   /api/schema/:
     get:
       operationId: schema_retrieve
@@ -1248,6 +1994,18 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
 components:
   schemas:
     AccionEnum:
@@ -1359,6 +2117,24 @@ components:
       - id
       - moneda_origen
       - tasa
+    Captcha:
+      type: object
+      properties:
+        captcha_key:
+          type: string
+        image_url:
+          type: string
+      required:
+      - captcha_key
+      - image_url
+    Code:
+      type: object
+      properties:
+        code:
+          type: string
+          maxLength: 128
+      required:
+      - code
     DashboardSummary:
       type: object
       properties:
@@ -1401,6 +2177,16 @@ components:
       - codigo
       - monto_usd
       - porcentaje
+    Enrollment:
+      type: object
+      properties:
+        otpauth_url:
+          type: string
+        qr:
+          type: string
+      required:
+      - otpauth_url
+      - qr
     ErrorContent:
       type: object
       properties:
@@ -1417,9 +2203,13 @@ components:
       type: object
       properties:
         error:
-          $ref: '#/components/schemas/ErrorContent'
-      required:
-      - error
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details: {}
     FuenteEnum:
       enum:
       - WORLD_BANK
@@ -1503,6 +2293,12 @@ components:
     Login:
       type: object
       properties:
+        captcha_key:
+          type: string
+          writeOnly: true
+        captcha_answer:
+          type: string
+          writeOnly: true
         email:
           type: string
           writeOnly: true
@@ -1512,6 +2308,42 @@ components:
       required:
       - email
       - password
+    LoginCode:
+      type: object
+      properties:
+        code:
+          type: string
+          maxLength: 128
+        mfa_token:
+          type: string
+          maxLength: 2048
+      required:
+      - code
+      - mfa_token
+    LoginResponse:
+      oneOf:
+      - $ref: '#/components/schemas/LoginTokens'
+      - $ref: '#/components/schemas/MFAPending'
+    LoginTokens:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    MFAPending:
+      type: object
+      properties:
+        mfa_required:
+          type: boolean
+        mfa_token:
+          type: string
+      required:
+      - mfa_required
+      - mfa_token
     Map:
       type: object
       properties:
@@ -1874,6 +2706,18 @@ components:
       - moneda_nombre
       - nombre
       - region
+    PasswordChange:
+      type: object
+      properties:
+        current_password:
+          type: string
+          writeOnly: true
+        new_password:
+          type: string
+          writeOnly: true
+      required:
+      - current_password
+      - new_password
     Portfolio:
       type: object
       properties:
@@ -2128,6 +2972,15 @@ components:
       - calculados
       - errores
       - existentes
+    Recovery:
+      type: object
+      properties:
+        recovery_codes:
+          type: array
+          items:
+            type: string
+      required:
+      - recovery_codes
     RegionEnum:
       enum:
       - ANDINA
@@ -2165,6 +3018,12 @@ components:
           format: date-time
           readOnly: true
         password:
+          type: string
+          writeOnly: true
+        captcha_key:
+          type: string
+          writeOnly: true
+        captcha_answer:
           type: string
           writeOnly: true
       required:
@@ -2384,6 +3243,16 @@ components:
         refresh:
           type: string
           writeOnly: true
+      required:
+      - access
+      - refresh
+    TokenResponse:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
       required:
       - access
       - refresh

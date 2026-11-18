@@ -1,0 +1,43 @@
+# Local observability only. Alloy replaces EOL Promtail; no Docker socket mount.
+services:
+  loki:
+    image: grafana/loki:3.6.20
+    profiles: [siem]
+    command: [-config.file=/etc/loki/local-config.yaml]
+    volumes:
+      - ./ops/loki.yaml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    ports: ['127.0.0.1:13100:3100']
+    security_opt: [no-new-privileges:true]
+  alloy:
+    image: grafana/alloy:v1.21.3
+    profiles: [siem]
+    command: [run, --storage.path=/var/lib/alloy, /etc/alloy/config.alloy]
+    volumes:
+      - ./ops/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - ./tmp/siem:/var/log/datapulse:ro
+      - alloy_data:/var/lib/alloy
+    depends_on: [loki]
+    security_opt: [no-new-privileges:true]
+  grafana:
+    image: grafana/grafana:13.3.1
+    profiles: [siem]
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Define GRAFANA_ADMIN_PASSWORD locally}
+      GF_USERS_ALLOW_SIGN_UP: 'false'
+      GF_ANALYTICS_REPORTING_ENABLED: 'false'
+      GF_ANALYTICS_CHECK_FOR_UPDATES: 'false'
+    ports: ['127.0.0.1:13000:3000']
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./ops/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+      - ./ops/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./ops/grafana/rules.yaml:/etc/grafana/provisioning/alerting/rules.yaml:ro
+      - ./ops/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on: [loki]
+    security_opt: [no-new-privileges:true]
+volumes:
+  loki_data:
+  alloy_data:
+  grafana_data:

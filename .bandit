@@ -1,0 +1,5 @@
+[bandit]
+# Existing tests intentionally exercise weak hashes and error paths. Migrations
+# contain historical schema SQL and are reviewed with migration/PG tests.
+exclude = backend/core/tests,backend/core/migrations
+# No global skips: B101 remains active in production code.

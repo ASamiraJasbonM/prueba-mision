@@ -36,6 +36,8 @@ Thumbs.db
 
 # Misc
 tmp/
+backups/
+evidencias/
 docs/_build/
 *.egg-info/
 dist/

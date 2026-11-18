@@ -11,6 +11,7 @@ from .models import Pais, IndiceRiesgo, Alerta, LecturaAlerta
 from .permissions import EsAdmin
 from .services.risk import recalculate
 from .audit import audit
+from .idempotency import idempotent
 from .services.numbers import quantize
 
 
@@ -95,6 +96,7 @@ class RiesgoViewSet(viewsets.ReadOnlyModelViewSet):
 
     @extend_schema(request=None, responses=RecalculateReportSerializer, parameters=[])
     @action(detail=False, methods=['post'], permission_classes=[EsAdmin])
+    @idempotent
     def calcular(self, request):
         return Response(recalculate())
 

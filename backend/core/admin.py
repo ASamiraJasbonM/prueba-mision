@@ -5,8 +5,22 @@ from .models import (Moneda, Pais, IndicadorEconomico, TipoCambio, Portafolio,
                      Posicion, IndiceRiesgo, Alerta, LecturaAlerta, LogActividad)
 
 for model in [Moneda, Pais, IndicadorEconomico, TipoCambio, Portafolio,
-              Posicion, IndiceRiesgo, Alerta, LecturaAlerta, LogActividad]:
+              Posicion, IndiceRiesgo, Alerta, LecturaAlerta]:
     admin.site.register(model)
+
+
+@admin.register(LogActividad)
+class AuditAdmin(admin.ModelAdmin):
+    readonly_fields = [field.name for field in LogActividad._meta.fields]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
 
 
 @admin.register(Usuario)

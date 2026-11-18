@@ -1,0 +1,244 @@
+apiVersion: 1
+groups:
+- orgId: 1
+  name: datapulse
+  folder: DataPulse
+  interval: 1m
+  rules:
+  - uid: brute_force_login
+    title: brute_force_login
+    condition: B
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      service: datapulse
+      severity: warning
+    annotations:
+      summary: 'brute_force_login: revisar docs/IR.md; confirmar antes de contener.'
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: loki
+      model:
+        refId: A
+        expr: sum by (ip) (count_over_time({job="datapulse"} | json | event="request"
+          | __error__="" | path="/api/auth/login/" | status=401 [1m]))
+        queryType: instant
+        instant: true
+        intervalMs: 1000
+        maxDataPoints: 43200
+    - refId: B
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasourceUid: __expr__
+      model:
+        refId: B
+        type: classic_conditions
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 4
+          operator:
+            type: and
+          query:
+            params:
+            - A
+          reducer:
+            type: last
+            params: []
+          type: query
+  - uid: privilege_escalation_attempt
+    title: privilege_escalation_attempt
+    condition: B
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      service: datapulse
+      severity: warning
+    annotations:
+      summary: 'privilege_escalation_attempt: revisar docs/IR.md; confirmar antes
+        de contener.'
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: loki
+      model:
+        refId: A
+        expr: sum(count_over_time({job="datapulse"} | json | event="privilege_escalation_attempt"
+          | __error__="" [5m]))
+        queryType: instant
+        instant: true
+        intervalMs: 1000
+        maxDataPoints: 43200
+    - refId: B
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasourceUid: __expr__
+      model:
+        refId: B
+        type: classic_conditions
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+          operator:
+            type: and
+          query:
+            params:
+            - A
+          reducer:
+            type: last
+            params: []
+          type: query
+  - uid: mass_conflict
+    title: mass_conflict
+    condition: B
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      service: datapulse
+      severity: warning
+    annotations:
+      summary: 'mass_conflict: revisar docs/IR.md; confirmar antes de contener.'
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: loki
+      model:
+        refId: A
+        expr: sum by (usuario_id) (count_over_time({job="datapulse"} | json | event="request"
+          | __error__="" | status=409 [5m]))
+        queryType: instant
+        instant: true
+        intervalMs: 1000
+        maxDataPoints: 43200
+    - refId: B
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasourceUid: __expr__
+      model:
+        refId: B
+        type: classic_conditions
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 9
+          operator:
+            type: and
+          query:
+            params:
+            - A
+          reducer:
+            type: last
+            params: []
+          type: query
+  - uid: error_5xx_burst
+    title: error_5xx_burst
+    condition: B
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      service: datapulse
+      severity: warning
+    annotations:
+      summary: 'error_5xx_burst: revisar docs/IR.md; confirmar antes de contener.'
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: loki
+      model:
+        refId: A
+        expr: sum(count_over_time({job="datapulse"} | json | event="request" | __error__=""
+          | status>=500 [5m])) / sum(count_over_time({job="datapulse"} | json | event="request"
+          | __error__="" [5m]))
+        queryType: instant
+        instant: true
+        intervalMs: 1000
+        maxDataPoints: 43200
+    - refId: B
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasourceUid: __expr__
+      model:
+        refId: B
+        type: classic_conditions
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0.05
+          operator:
+            type: and
+          query:
+            params:
+            - A
+          reducer:
+            type: last
+            params: []
+          type: query
+  - uid: audit_chain_broken
+    title: audit_chain_broken
+    condition: B
+    for: 0s
+    noDataState: OK
+    execErrState: Error
+    labels:
+      service: datapulse
+      severity: warning
+    annotations:
+      summary: 'audit_chain_broken: revisar docs/IR.md; confirmar antes de contener.'
+    data:
+    - refId: A
+      relativeTimeRange:
+        from: 600
+        to: 0
+      datasourceUid: loki
+      model:
+        refId: A
+        expr: sum(count_over_time({job="datapulse"} | json | event="audit_verification"
+          | ok="false" | __error__="" [5m]))
+        queryType: instant
+        instant: true
+        intervalMs: 1000
+        maxDataPoints: 43200
+    - refId: B
+      relativeTimeRange:
+        from: 0
+        to: 0
+      datasourceUid: __expr__
+      model:
+        refId: B
+        type: classic_conditions
+        conditions:
+        - evaluator:
+            type: gt
+            params:
+            - 0
+          operator:
+            type: and
+          query:
+            params:
+            - A
+          reducer:
+            type: last
+            params: []
+          type: query

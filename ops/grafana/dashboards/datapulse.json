@@ -1,0 +1,101 @@
+{
+  "uid": "datapulse-security",
+  "title": "DataPulse Security",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Top IPs: login 401 (15 min)",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "topk(10, sum by (ip) (count_over_time({job=\"datapulse\"} | json | event=\"request\" | __error__=\"\" | path=\"/api/auth/login/\" | status=401 [15m])))",
+          "queryType": "range"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "5xx por endpoint (60 min)",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (path) (count_over_time({job=\"datapulse\"} | json | event=\"request\" | __error__=\"\" | status>=500 [1h]))",
+          "queryType": "range"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "p95 duraci\u00f3n ms por endpoint",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "quantile_over_time(0.95, {job=\"datapulse\"} | json | event=\"request\" | __error__=\"\" | unwrap duracion_ms | __error__=\"\" [1h]) by (path)",
+          "queryType": "range"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Errores sync por pa\u00eds y operaci\u00f3n",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 9,
+        "w": 12,
+        "h": 9
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (pais, operacion) (count_over_time({job=\"datapulse\"} | json | event=\"sync_error\" | __error__=\"\" [1h]))",
+          "queryType": "range"
+        }
+      ]
+    }
+  ]
+}

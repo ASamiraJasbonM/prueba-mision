@@ -20,4 +20,6 @@ class ActiveJWTAuthentication(JWTAuthentication):
         user = super().get_user(validated_token)
         if not active_user(user):
             raise AuthenticationFailed('El usuario está inactivo.')
+        if validated_token.get('mfa_epoch', 0) != user.mfa_epoch or (user.mfa_enabled and validated_token.get('mfa') is not True):
+            raise AuthenticationFailed('La sesión requiere autenticación actualizada.')
         return user

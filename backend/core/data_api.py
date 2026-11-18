@@ -8,6 +8,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from .models import Pais, IndicadorEconomico, TipoCambio
 from .permissions import EsAdmin
 from .services.tasks import sync_and_recalculate
+from .idempotency import idempotent
 
 
 class IndicadorSerializer(serializers.ModelSerializer):
@@ -103,5 +104,6 @@ class PaisViewSet(viewsets.ReadOnlyModelViewSet):
 
     @extend_schema(request=None, responses=SyncReportSerializer)
     @action(detail=False, methods=['post'], url_path='sync-indicadores', permission_classes=[EsAdmin])
+    @idempotent
     def sync_indicadores(self, request):
         return Response(sync_and_recalculate())

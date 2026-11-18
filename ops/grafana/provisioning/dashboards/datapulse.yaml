@@ -1,0 +1,7 @@
+apiVersion: 1
+providers:
+  - name: datapulse
+    folder: DataPulse
+    type: file
+    options:
+      path: /var/lib/grafana/dashboards

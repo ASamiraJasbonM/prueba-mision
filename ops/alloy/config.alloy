@@ -1,0 +1,30 @@
+local.file_match "datapulse" {
+  path_targets = [{"__path__" = "/var/log/datapulse/*.log", "job" = "datapulse"}]
+  sync_period = "5s"
+}
+
+loki.source.file "datapulse" {
+  targets = local.file_match.datapulse.targets
+  forward_to = [loki.process.datapulse.receiver]
+}
+
+loki.process "datapulse" {
+  stage.json {
+    expressions = {"event" = "event", "timestamp" = "timestamp"}
+  }
+  stage.timestamp {
+    source = "timestamp"
+    format = "RFC3339Nano"
+    action_on_failure = "skip"
+  }
+  stage.labels {
+    values = {"event" = ""}
+  }
+  forward_to = [loki.write.local.receiver]
+}
+
+loki.write "local" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

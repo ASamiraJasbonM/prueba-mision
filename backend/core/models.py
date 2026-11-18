@@ -63,6 +63,11 @@ class Usuario(AbstractUser):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['nombre_completo']
     objects = UsuarioManager()
+    mfa_enabled = models.BooleanField(default=False)
+    mfa_secret_enc = models.TextField(blank=True)
+    recovery_codes_enc = models.TextField(blank=True)
+    mfa_last_t = models.BigIntegerField(default=-1)
+    mfa_epoch = models.PositiveIntegerField(default=0)
 
     class Meta:
         constraints = [models.UniqueConstraint(Lower('email'), name='usuario_email_ci_unique')]
@@ -272,13 +277,41 @@ class LogActividad(models.Model):
         EXPORT = 'EXPORT', 'Exportar'
 
     usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT, related_name='actividades', null=True, blank=True)
-    accion = models.CharField(max_length=10, choices=Accion.choices)
+    accion = models.CharField(max_length=32, choices=Accion.choices)
     entidad_afectada = models.CharField(max_length=100)
     entidad_id = models.CharField(max_length=100)
     detalle = models.JSONField(default=dict)
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     fecha = models.DateTimeField(default=timezone.now)
 
+    hash_anterior = models.CharField(max_length=64, null=True, blank=True)
+    hash_actual = models.CharField(max_length=64, unique=True)
+    firma_hmac = models.CharField(max_length=64)
+
     class Meta:
         ordering = ['-fecha', '-pk']
+
+
+class AuditHead(models.Model):
+    """Singleton used to serialize appends, including an initially empty chain."""
+    hash_actual = models.CharField(max_length=64, default='', blank=True)
+
+
+class IdempotentRequest(models.Model):
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    path = models.CharField(max_length=100)
+    key = models.CharField(max_length=128)
+    body_hash = models.CharField(max_length=64)
+    response = models.JSONField()
+    expires = models.DateTimeField()
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['usuario', 'path', 'key'], name='idempotency_user_path_key')]
+
+
+class MFALoginChallenge(models.Model):
+    digest = models.CharField(max_length=64, primary_key=True)
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE)
+    expires = models.DateTimeField()
+    used = models.BooleanField(default=False)
 
