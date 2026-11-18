@@ -56,10 +56,13 @@ jobs:
           node --check docker/finalize-index.mjs
           node --check docker/smoke-test.mjs
           node --check docker/upstream-fixture.mjs
+          node --check docker/check-production.mjs
+          node --check docker/check-source-security.mjs
+          node docker/check-source-security.mjs
           sh -n docker/14-validate-backend.sh
-          node --test docker/build-config.test.mjs
+          node --test docker/build-config.test.mjs docker/security-build.test.mjs
       - name: Audit production dependencies
-        run: npm audit --omit=dev
+        run: npm run audit:prod
 
   test:
     needs: lint-and-check
@@ -92,7 +95,7 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci --no-audit --no-fund
       - run: npm run build -- --configuration=production
-      - run: node docker/finalize-index.mjs
+      - run: node docker/check-production.mjs
       - run: test -s dist/datapulse/browser/index.html
       - uses: actions/upload-artifact@v4
         with:

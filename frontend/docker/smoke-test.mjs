@@ -6,6 +6,7 @@ const security = [
   'x-frame-options',
   'referrer-policy',
   'permissions-policy',
+  'cross-origin-resource-policy',
 ];
 async function request(path, options = {}) {
   const response = await fetch(base + path, options);

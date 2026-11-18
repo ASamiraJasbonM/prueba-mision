@@ -29,6 +29,7 @@ writeFileSync(
   `// Generated only inside the Docker builder. API_URL is public configuration.\nexport const environment = ${JSON.stringify({ production: true, apiUrl })};\n`,
 );
 const csp = `default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self'${connectOrigin}; object-src 'none'; base-uri 'self'; frame-ancestors 'none'; form-action 'self'; worker-src 'self' blob:`;
+writeFileSync('docker/csp-policy.json', JSON.stringify(csp));
 writeFileSync(
   'docker/security-headers.conf',
   [
@@ -38,5 +39,6 @@ writeFileSync(
     'add_header Referrer-Policy "strict-origin-when-cross-origin" always;',
     'add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;',
     'add_header Cross-Origin-Opener-Policy "same-origin" always;',
+    'add_header Cross-Origin-Resource-Policy "same-origin" always;',
   ].join('\n') + '\n',
 );

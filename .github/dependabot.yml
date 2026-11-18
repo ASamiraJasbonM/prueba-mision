@@ -1,5 +1,13 @@
 version: 2
 updates:
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      frontend-dependencies:
+        patterns: ['*']
   # Native uv ecosystem updates pyproject.toml and uv.lock together.
   - package-ecosystem: uv
     directory: /
