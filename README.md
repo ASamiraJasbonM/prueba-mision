@@ -97,6 +97,8 @@ uv run --frozen python backend/manage.py sync_paises
 
 `sync_indicadores` siempre encadena recálculo, incluso ante fallos parciales; cambio diario también recalcula. Reintentos HTTP: máximo dos adicionales, timeout por petición configurable, solo GET y fallos transitorios. Sincronización por país/indicador, transacciones cortas sin llamadas de red dentro. No se eliminan datos anteriores ante errores. Para REST Countries v5 configurar `REST_COUNTRIES_API_KEY` (ver docs/FUENTES.md).
 
+Código de salida: `sync_indicadores` y `sync_tipos_cambio` terminan con código 0 ante éxito total o parcial, y con código 1 ante fallo total (cero actualizaciones y al menos un error), de modo que cron o GitHub Actions puedan detectar un fallo total del proveedor.
+
 Ejemplo cron UTC, ajustando rutas y entorno; ejecutar desde la raíz del proyecto:
 
 ```cron

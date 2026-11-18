@@ -2,6 +2,7 @@ from io import StringIO
 from decimal import Decimal
 from unittest.mock import patch
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from core.models import IndiceRiesgo, IndicadorEconomico, LogActividad
 from .helpers import APICase, country
 
@@ -59,7 +60,21 @@ class OperationTests(APICase):
 
     def test_all_commands_are_available_offline(self):
         with patch('core.services.sync.get_json', side_effect=ValueError('Offline')):
-            call_command('sync_tipos_cambio', stdout=StringIO())
+            with self.assertRaises(CommandError):
+                call_command('sync_tipos_cambio', stdout=StringIO())
             call_command('sync_paises', stdout=StringIO())
         call_command('recalcular_irpc', stdout=StringIO())
         self.assertEqual(IndiceRiesgo.objects.count(), 1)
+
+    def test_sync_command_fails_on_total_failure(self):
+        with patch('core.services.sync.get_json', side_effect=ValueError('Offline')):
+            with self.assertRaises(CommandError):
+                call_command('sync_indicadores', stdout=StringIO())
+
+    def test_sync_command_succeeds_on_partial_success(self):
+        def response(url, **kwargs):
+            if 'NY.GDP.MKTP.CD' in url:
+                return [{'pages': 1}, [{'date': '2025', 'value': Decimal('4')}]]
+            raise ValueError('Servicio no disponible')
+        with patch('core.services.sync.get_json', side_effect=response):
+            call_command('sync_indicadores', stdout=StringIO())
