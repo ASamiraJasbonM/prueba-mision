@@ -275,6 +275,14 @@ class LogActividad(models.Model):
         CONSULTAR = 'CONSULTAR', 'Consultar'
         LOGIN = 'LOGIN', 'Login'
         EXPORT = 'EXPORT', 'Exportar'
+        LOGIN_FALLIDO = 'LOGIN_FALLIDO', 'Login fallido'
+        LOGIN_BLOQUEADO = 'LOGIN_BLOQUEADO', 'Login bloqueado'
+        PASSWORD_CHANGE = 'PASSWORD_CHANGE', 'Cambio de contraseña'
+        MFA_ENROLL = 'MFA_ENROLL', 'Enrolar MFA'
+        MFA_VERIFY_OK = 'MFA_VERIFY_OK', 'Verificación MFA correcta'
+        MFA_VERIFY_FAIL = 'MFA_VERIFY_FAIL', 'Verificación MFA fallida'
+        MFA_DISABLE = 'MFA_DISABLE', 'Deshabilitar MFA'
+        CORRECCION = 'CORRECCION', 'Corrección de auditoría'
 
     usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT, related_name='actividades', null=True, blank=True)
     accion = models.CharField(max_length=32, choices=Accion.choices)

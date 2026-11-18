@@ -5,7 +5,6 @@ from datetime import timezone as datetime_timezone
 from django.conf import settings
 from django.db import transaction
 from django.db.models import F
-from django.utils import timezone
 from core.models import AuditHead, LogActividad
 
 
@@ -25,7 +24,9 @@ def seal(row, previous):
 def registrar(**fields):
     # SQLite obtains a write lock before reading the tail. PostgreSQL locks the
     # singleton row until the caller's outermost transaction commits.
-    AuditHead.objects.get_or_create(pk=1)
+    _, created = AuditHead.objects.get_or_create(pk=1)
+    if created and LogActividad.objects.exists():
+        raise RuntimeError('Missing audit head for an existing chain.')
     AuditHead.objects.filter(pk=1).update(hash_actual=F('hash_actual'))
     head = AuditHead.objects.select_for_update().get(pk=1)
     row = LogActividad(**fields)
@@ -40,7 +41,13 @@ def registrar(**fields):
     return row
 
 
+@transaction.atomic
 def verify():
+    # Hold the same lock as appenders so an ordinary concurrent append cannot
+    # produce a false tail-mismatch incident during periodic verification.
+    head = AuditHead.objects.select_for_update().filter(pk=1).first()
+    if head is None:
+        return {'event': 'audit_verification', 'ok': False, 'broken_id': None, 'checked': 0, 'cause': 'missing_head'}
     previous, checked = None, 0
     for row in LogActividad.objects.order_by('pk').iterator():
         digest, signature = seal(row, previous)
@@ -50,7 +57,6 @@ def verify():
         if cause:
             return {'event': 'audit_verification', 'ok': False, 'broken_id': row.pk, 'checked': checked, 'cause': cause}
         previous, checked = row.hash_actual, checked + 1
-    head = AuditHead.objects.get(pk=1)
     ok = hmac.compare_digest(head.hash_actual, previous or '')
     return {'event': 'audit_verification', 'ok': ok, 'broken_id': None, 'checked': checked,
             'cause': None if ok else 'tail'}
