@@ -161,3 +161,18 @@ PostgreSQL validado: 61 pruebas aprobadas, sin skips (evidencia en `frontend/REA
 - Etapa 09: Logs JSON, auditoria y comandos programables encadenados
 
 - Etapa 10: Seed completo, regresiones, OpenAPI y documentacion final
+
+## Seguridad y operación
+
+[Controles, pruebas y límites](docs/SEGURIDAD.md) · [Resultados por etapa](docs/VALIDACION_SEGURIDAD.md)
+· [Divulgación de vulnerabilidades](SECURITY.md) · [Continuidad BCP](docs/BCP.md)
+· [Respuesta IR](docs/IR.md) · [Custodia forense](docs/FORENSE.md)
+· [Backup y restore](docs/RESTORE.md) · [SIEM local](docs/SIEM.md)
+· [Seguridad frontend](docs/SEGURIDAD_FRONTEND.md) · [Integración segura](docs/INTEGRACION_SEGURIDAD.md).
+
+Producción requiere AUDIT_HMAC_KEY, FIELD_ENCRYPTION_KEY (Fernet válida), MFA_KEY y
+SECRET_KEY independientes desde gestor de secretos. DEBUG=False, HTTPS y CAPTCHA
+activo; docs UI desactivada por defecto. `.env.example` es para demo local.
+MFA del ADMIN es opcional y seed no lo habilita. Angular actual no implementa
+CAPTCHA/segundo factor: revisar la limitación antes de despliegue productivo.
+Dependencias administradas solo con uv; Docker/CI usan uv 0.13.9 corregido.

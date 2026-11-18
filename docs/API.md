@@ -88,3 +88,47 @@ Inventario de adaptaciones y extensiones entregadas:
 - `IndiceRiesgo.clave_calculo` y `Alerta.clave_evento`: claves técnicas de idempotencia/deduplicación. Los campos de versión, detalle y cobertura no representan nuevos indicadores financieros.
 
 `Alerta.titulo`, `Alerta.mensaje`, `Alerta.severidad` y `Alerta.tipo_alerta` **no son extensiones**: el modelo del PDF los enumera en p. 3; también soportan la UI y sus filtros. Se documentan aquí para corregir esa premisa de la observación. El resto de operaciones del contrato backend requerido se mantiene; esto no implica entregar frontend, publicación ni video.
+# Controles de seguridad adicionales
+
+La envoltura `error.code/message/details` permanece. Nuevos códigos:
+`account_locked` (429 con Retry-After900), `captcha_required` (400) y
+`throttled` (429 con Retry-After calculado). Credenciales inválidas401 uniforme.
+Cinco fallos email/IP bloquean15min; CAPTCHA obligatorio en registro de producción
+y después de tres fallos recientes/IP en login. Demo DEBUG lo desactiva; scopes
+anon20/min y user100/min se mantienen. Nuevos scopes: login5/min, register3/min,
+sync2/h, recalcular2/h, export_pdf10/min, mfa_verify5/min.
+
+`GET /api/auth/captcha/` devuelve captcha_key/image_url; GET image_url retorna
+imagen local. Enviar captcha_key/captcha_answer en registro o login cuando aplica.
+Reto expira y se consume tras un intento, también si falla. Nunca retorna solución.
+
+`POST /api/auth/password-change/` autenticado recibe current_password/new_password;
+mínimo12 caracteres y validadores Django. Respuesta204; invalida access y todos
+los refresh anteriores. Volver a iniciar sesión.
+
+MFA ADMIN (seed sin MFA):
+
+| Ruta POST | Entrada | Respuesta |
+|---|---|---|
+| /api/auth/mfa/enroll/ | ADMIN autenticado, sin cuerpo | otpauth_url y qr data:image/png;base64; conservar en privado |
+| /api/auth/mfa/verify/ | code TOTP | recovery_codes (10; mostrados una vez) y habilita MFA |
+| /api/auth/mfa/disable/ | code TOTP actual | 204; recovery no permite deshabilitar |
+| /api/auth/mfa/verify-login/ | mfa_token y code TOTP/recovery | access/refresh |
+
+Login ADMIN enrolado retorna `{mfa_required:true,mfa_token:...}` sin JWT. Reto5min,
+ligado a contraseña y época MFA, un solo uso. TOTP6 dígitos/30s con tolerancia±1
+paso y protección replay. Un recovery se consume una vez. Verificación incorrecta401;
+scope excedido429. Enrolar/deshabilitar invalida sesiones anteriores.
+
+`Idempotency-Key` opcional en POST /api/paises/sync-indicadores/ y
+/api/riesgo/calcular/: ASCII visible1..128, cache DB5min por usuario/endpoint.
+Misma clave/cuerpo devuelve respuesta previa sin repetir ejecución/auditoría;
+mismo identificador con otro cuerpo409. Cada petición sigue contando para cuotas.
+Expiración permite ejecución nueva; no reutilizar claves para otra intención.
+
+Auth devuelve Cache-Control:no-store incluso en errores; CORS admite
+Idempotency-Key e If-Match. If-Match fuerte/Decimal/UTC siguen iguales.
+Producción deshabilita /api/docs/ por defecto; /api/schema/ permanece público.
+OpenAPI versionado documenta unión de respuestas login, MFA, nuevos errores y
+cabeceras. Angular actual requiere evolución para CAPTCHA/MFA; ver
+[integración](INTEGRACION_SEGURIDAD.md) y [seguridad](SEGURIDAD.md).

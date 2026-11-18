@@ -214,11 +214,19 @@ paths:
           type: string
           enum:
           - CONSULTAR
+          - CORRECCION
           - CREAR
           - EDITAR
           - ELIMINAR
           - EXPORT
           - LOGIN
+          - LOGIN_BLOQUEADO
+          - LOGIN_FALLIDO
+          - MFA_DISABLE
+          - MFA_ENROLL
+          - MFA_VERIFY_FAIL
+          - MFA_VERIFY_OK
+          - PASSWORD_CHANGE
         description: |-
           * `CREAR` - Crear
           * `EDITAR` - Editar
@@ -226,6 +234,14 @@ paths:
           * `CONSULTAR` - Consultar
           * `LOGIN` - Login
           * `EXPORT` - Exportar
+          * `LOGIN_FALLIDO` - Login fallido
+          * `LOGIN_BLOQUEADO` - Login bloqueado
+          * `PASSWORD_CHANGE` - Cambio de contraseña
+          * `MFA_ENROLL` - Enrolar MFA
+          * `MFA_VERIFY_OK` - Verificación MFA correcta
+          * `MFA_VERIFY_FAIL` - Verificación MFA fallida
+          * `MFA_DISABLE` - Deshabilitar MFA
+          * `CORRECCION` - Corrección de auditoría
       - in: query
         name: entidad_afectada
         schema:
@@ -2016,6 +2032,14 @@ components:
       - CONSULTAR
       - LOGIN
       - EXPORT
+      - LOGIN_FALLIDO
+      - LOGIN_BLOQUEADO
+      - PASSWORD_CHANGE
+      - MFA_ENROLL
+      - MFA_VERIFY_OK
+      - MFA_VERIFY_FAIL
+      - MFA_DISABLE
+      - CORRECCION
       type: string
       description: |-
         * `CREAR` - Crear
@@ -2024,6 +2048,14 @@ components:
         * `CONSULTAR` - Consultar
         * `LOGIN` - Login
         * `EXPORT` - Exportar
+        * `LOGIN_FALLIDO` - Login fallido
+        * `LOGIN_BLOQUEADO` - Login bloqueado
+        * `PASSWORD_CHANGE` - Cambio de contraseña
+        * `MFA_ENROLL` - Enrolar MFA
+        * `MFA_VERIFY_OK` - Verificación MFA correcta
+        * `MFA_VERIFY_FAIL` - Verificación MFA fallida
+        * `MFA_DISABLE` - Deshabilitar MFA
+        * `CORRECCION` - Corrección de auditoría
     AlertSummary:
       type: object
       properties:
