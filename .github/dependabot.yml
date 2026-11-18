@@ -5,16 +5,25 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    # Solo actualiza package-lock.json dentro de los rangos declarados (~ y ^),
+    # sin reescribir el manifest a majors/minors incompatibles con Angular 20.
+    versioning-strategy: lockfile-only
     groups:
       frontend-dependencies:
         patterns: ['*']
-    # Angular 20 solo soporta TypeScript 5.x. Dependabot propuso Angular 22
-    # (requiere TypeScript >=6 <6.1) junto a TypeScript 7, rompiendo `npm ci`.
+    # Guardas explícitas de las peer deps de Angular 20: TypeScript 5.x,
+    # zone.js 0.15.x y jasmine 5.x. Evitan bumps que rompen `npm ci`.
     ignore:
       - dependency-name: "typescript"
         versions: [">=6.0.0"]
       - dependency-name: "@angular/*"
         versions: [">=21.0.0"]
+      - dependency-name: "zone.js"
+        versions: [">=0.16.0"]
+      - dependency-name: "@types/jasmine"
+        versions: [">=6.0.0"]
+      - dependency-name: "jasmine-core"
+        versions: [">=6.0.0"]
   # Native uv ecosystem updates pyproject.toml and uv.lock together.
   - package-ecosystem: uv
     directory: /
