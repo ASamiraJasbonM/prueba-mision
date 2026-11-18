@@ -4,7 +4,8 @@ on:
   push:
     branches: [main, feat/backend-datapulse]
   pull_request:
-    branches: [main]
+    branches: [main, feat/backend-datapulse]
+  workflow_dispatch:
 
 permissions:
   contents: read
