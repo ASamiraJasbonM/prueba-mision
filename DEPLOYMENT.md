@@ -40,7 +40,7 @@ No subir la URL PostgreSQL, hooks ni claves a Git, README o logs de CI.
 2. Seleccionar el repositorio, rama de producción `main`, directorio raíz vacío.
 3. Build command: `cd frontend && npm ci --no-audit --no-fund && npm run build:pages`.
 4. Build output directory: `frontend/dist/datapulse/browser` (el proyecto se llama datapulse).
-5. Variables de build públicas: `NODE_VERSION=22.12.0`,
+5. Variables de build públicas: `NODE_VERSION=22.12.0`, `SKIP_DEPENDENCY_INSTALL=true`,
    `API_URL=https://HOSTNAME-REAL.onrender.com/api/`.
 6. Save and Deploy, sin contratar planes ni complementos de pago.
 
@@ -48,6 +48,8 @@ No subir la URL PostgreSQL, hooks ni claves a Git, README o logs de CI.
 finaliza el HTML sin scripts inline, valida el artefacto y genera `_headers`.
 `public/_redirects` conserva las rutas Angular al recargar una página interna.
 No introducir secretos del backend en variables de build del frontend.
+`SKIP_DEPENDENCY_INSTALL` evita que Pages intente instalar el backend Python de la
+raíz; `npm ci` continúa ejecutándose explícitamente en el comando de build.
 
 ## Sincronización final
 
