@@ -1,6 +1,26 @@
 # DataPulse Latam — backend y frontend Angular
 
-Implementación por etapas de Django + DRF con frontend Angular. Despliegue remoto no incluido en este encargo.
+Implementación por etapas de Django + DRF con frontend Angular. Backend desplegado en Render Free y frontend en Cloudflare Pages.
+
+## URLs públicas
+
+- Frontend: https://datapulse-latam.pages.dev
+- Backend API: https://datapulse-backend-vkc5.onrender.com/api/
+- Health check: https://datapulse-backend-vkc5.onrender.com/api/health/
+
+Rama de despliegue: `main`. Configuración y comandos: [guía de despliegue](DEPLOYMENT.md).
+Cloudflare compila con `npm run build:pages`, que configura API y CSP; publica
+`frontend/dist/datapulse/browser`. Render ejecuta migraciones antes de Gunicorn.
+GitHub Actions llama al deploy hook únicamente después de Backend CI satisfactorio.
+
+En Render, `CORS_ALLOWED_ORIGINS=https://datapulse-latam.pages.dev` y
+`ALLOWED_HOSTS=datapulse-backend-vkc5.onrender.com`. Las claves y la conexión
+PostgreSQL se guardan fuera de Git; las cuentas desplegadas tienen contraseñas
+aleatorias y no usan la contraseña pública del seed local.
+
+Verificación del 19 de noviembre de 2026: salud HTTP 200, preflight CORS desde
+Pages, login de analista, consulta autenticada de 10 países, CAPTCHA PNG y
+fallback de una ruta interna Angular. Los datos iniciales son DEMO sintéticos.
 
 ## Desarrollo local (PowerShell, Python 3.12 y uv 0.10.11)
 
@@ -18,7 +38,7 @@ La configuración lee `.env` desde la raíz. `SECRET_KEY` es obligatorio. SQLite
 
 uv crea y mantiene `.venv`; no se instala el proyecto con pip. `pyproject.toml` declara las dependencias directas y las restricciones transitivas verificadas; `uv.lock` fija resolución, fuentes y hashes. Python queda acotado a `>=3.12,<3.13` para conservar el entorno validado. Las pruebas actuales no requieren paquetes adicionales: el grupo `dev` está vacío. Ver [gestión de dependencias con uv](docs/DEPENDENCIAS_UV.md).
 
-API local: http://127.0.0.1:8000/api/ ; Swagger: http://127.0.0.1:8000/api/docs/ . Frontend local: http://127.0.0.1:4200 (Angular) o http://127.0.0.1:8080 (Docker). No hay URLs públicas: el alcance de este encargo es local, sin publicación.
+API local: http://127.0.0.1:8000/api/ ; Swagger local: http://127.0.0.1:8000/api/docs/ . Frontend local: http://127.0.0.1:4200 (Angular) o http://127.0.0.1:8080 (Docker). La documentación API está desactivada en el despliegue público.
 
 Documentación: [contrato y payloads](docs/API.md), [arquitectura y ER](docs/ARQUITECTURA.md), [fuentes verificadas](docs/FUENTES.md), [resultados por etapa](docs/ETAPAS.md).
 
@@ -32,7 +52,7 @@ La revisión posterior está en [Cierre de observaciones P1–P9](docs/CIERRE_OB
 
 Alcance de este encargo: backend completo y frontend Angular (ver `frontend/README.md`). El PDF asigna 35% a la parte técnica de frontend y 10% al video dentro de los entregables (son esquemas de ponderación distintos). La implementación abarca la parte técnica backend descrita como 40% y los componentes de backend del bloque de integración/tareas descrito como 25%; no se afirma haber obtenido esos puntajes ni cumplir el 100% del PDF. El despliegue público sigue pendiente: `compose.yaml` prepara PostgreSQL local y frontend Docker, pero no proporciona URL pública, HTTPS ni video. La validación real en PostgreSQL está documentada abajo (61 pruebas, sin skips); la validación contra proveedores se declara pendiente.
 
-> Advertencia: el despliegue en Render usa el plan gratuito, el cual expira a los 30 días. Si la URL no responde, el proyecto está dockerizado y se puede levantar en local con `docker compose up`.
+> Render Free suspende el servicio web por inactividad y el primer acceso puede tardar. La base PostgreSQL gratuita `datapulse-db` expira el 18 de diciembre de 2026, según el panel de Render; conservar un backup externo. El proyecto también puede levantarse en local con `docker compose up`.
 
 ## Base de datos y precisión
 
