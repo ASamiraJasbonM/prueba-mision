@@ -38,6 +38,7 @@ COPY --from=uv /uv /usr/local/bin/uv
 COPY --chown=appuser:appuser pyproject.toml uv.lock .python-version ./
 COPY --chown=appuser:appuser backend/ ./backend/
 COPY --chown=appuser:appuser scripts/check_numeric_policy.py ./scripts/check_numeric_policy.py
+COPY --chown=appuser:appuser scripts/render-start.sh ./scripts/render-start.sh
 
 USER appuser
 EXPOSE 8000

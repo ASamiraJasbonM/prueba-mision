@@ -1,0 +1,48 @@
+name: Deploy Render
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: deploy-render-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Require successful backend CI for this commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 180); do
+            echo "Waiting for backend CI (attempt $attempt/180)."
+            runs=$(gh run list --workflow backend-ci.yml --branch main --commit "$GITHUB_SHA" --event push --limit 1 --json status,conclusion)
+            status=$(jq -r '.[0].status // "pending"' <<< "$runs")
+            conclusion=$(jq -r '.[0].conclusion // ""' <<< "$runs")
+            if [[ "$status" == completed ]]; then
+              [[ "$conclusion" == success ]] || { echo 'Backend CI failed; deployment blocked.'; exit 1; }
+              exit 0
+            fi
+            sleep 10
+          done
+          echo 'Timed out waiting for backend CI.'
+          exit 1
+      - name: Trigger Render deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$RENDER_DEPLOY_HOOK_URL" || { echo 'Set repository secret RENDER_DEPLOY_HOOK_URL first.'; exit 1; }
+          curl --silent --fail --output /dev/null --max-time 60 -X POST "$RENDER_DEPLOY_HOOK_URL"

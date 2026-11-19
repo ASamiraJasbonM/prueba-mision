@@ -5,6 +5,7 @@
     "ng": "ng",
     "start": "ng serve --host 127.0.0.1 --proxy-config proxy.conf.json",
     "build": "ng build",
+    "build:pages": "node docker/build-pages.mjs",
     "postbuild": "node docker/finalize-index.mjs && node docker/check-production.mjs",
     "audit:prod": "npm audit --omit=dev --audit-level=high",
     "watch": "ng build --watch --configuration development",
