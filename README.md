@@ -131,7 +131,7 @@ Código de salida: `sync_indicadores` y `sync_tipos_cambio` terminan con código
 
 La automatización del despliegue usa `sync_diaria`: intenta indicadores y cambio
 diario, cada uno con recálculo, y falla también ante errores parciales o de recálculo.
-GitHub Actions la ejecuta a las 02:00 UTC, con secretos del entorno
+GitHub Actions ejecuta las dos tareas en jobs independientes a las 02:00 UTC, con secretos del entorno
 `production-maintenance` restringido a `main`, PostgreSQL externo con TLS y un
 informe JSON conservado como artifact. Ver [configuración y comprobación](DEPLOYMENT.md#tareas-diarias-reales).
 

@@ -9,6 +9,22 @@ from .helpers import APICase
 
 
 class MaintenanceTests(APICase):
+    def test_exchange_job_never_waits_for_indicators(self):
+        report = {'actualizados': 0, 'errores': [], 'riesgo': {'errores': []}}
+        with patch('core.services.tasks.sync_and_recalculate') as indicators, \
+             patch('core.services.tasks.exchange_and_recalculate', return_value=report) as exchange:
+            call_command('sync_diaria', task='tipos_cambio', stdout=StringIO())
+        indicators.assert_not_called()
+        exchange.assert_called_once()
+
+    def test_indicator_job_does_not_repeat_exchange_job(self):
+        report = {'actualizados': 0, 'errores': [], 'riesgo': {'errores': []}}
+        with patch('core.services.tasks.sync_and_recalculate', return_value=report) as indicators, \
+             patch('core.services.tasks.exchange_and_recalculate') as exchange:
+            call_command('sync_diaria', task='indicadores', stdout=StringIO())
+        indicators.assert_called_once()
+        exchange.assert_not_called()
+
     def test_daily_sync_runs_exchange_even_when_indicators_fail(self):
         with patch('core.services.tasks.sync_and_recalculate', side_effect=ValueError('provider failed')), \
              patch('core.services.tasks.exchange_and_recalculate', return_value={

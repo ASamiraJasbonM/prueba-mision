@@ -49,22 +49,33 @@ def persist_indicator(pais, tipo, year, value, unit):
     return True
 
 
-def sync_indicators():
+def sync_indicators(batch=False):
     report = {'paises_procesados': 0, 'actualizados': 0, 'errores': [], 'paises': []}
     year = timezone.now().year - 1
     logger.info('sync_indicadores_inicio')
-    for pais in Pais.objects.all():
-        changed_rows = []
+    countries = list(Pais.objects.all())
+    # The official API accepts semicolon-separated ISO-2 codes. Scheduled work
+    # uses six requests for ten countries instead of sixty. Interactive callers
+    # retain their existing request behavior and both paths share validation.
+    groups = [countries] if batch and countries else [[country] for country in countries]
+    for group in groups:
+        by_code = {country.pk: country for country in group}
+        changed_rows = {country.pk: [] for country in group}
         for tipo, (code, unit) in INDICATORS.items():
             try:
                 page = 1
                 while True:
-                    payload = get_json(f'{settings.WORLD_BANK_URL}/country/{pais.pk}/indicator/{code}',
+                    codes = ';'.join(by_code)
+                    payload = get_json(f'{settings.WORLD_BANK_URL}/country/{codes}/indicator/{code}',
                         params={'date': f'{year-4}:{year}', 'format': 'json', 'per_page': 100, 'page': page})
                     if not isinstance(payload, list) or len(payload) != 2 or not isinstance(payload[0], dict):
                         raise ValueError('Respuesta inválida de World Bank.')
                     for row in payload[1] or []:
-                        if row.get('value') is None:
+                        # A batched result must identify its country explicitly;
+                        # never assign an ambiguous or foreign row to a user country.
+                        row_code = row.get('country', {}).get('id') if batch else group[0].pk
+                        pais = by_code.get(row_code)
+                        if pais is None or row.get('value') is None:
                             continue
                         try:
                             row_year = int(row['date'])
@@ -72,17 +83,19 @@ def sync_indicators():
                                 changed = persist_indicator(pais, tipo, row_year, row['value'], unit)
                                 report['actualizados'] += int(changed)
                                 if changed:
-                                    changed_rows.append(f'{tipo}:{row_year}:{row["value"]}')
+                                    changed_rows[pais.pk].append(f'{tipo}:{row_year}:{row["value"]}')
                         except SYNC_ERRORS as exc:
                             report_error(report, pais.pk, tipo, exc)
                     if page >= min(int(payload[0].get('pages', 1)), 10):
                         break
                     page += 1
             except SYNC_ERRORS as exc:
-                report_error(report, pais.pk, tipo, exc)
-        report['paises_procesados'] += 1
-        report['paises'].append(pais.pk)
-        indicator_alert(pais, changed_rows)
+                for pais in group:
+                    report_error(report, pais.pk, tipo, exc)
+        for pais in group:
+            report['paises_procesados'] += 1
+            report['paises'].append(pais.pk)
+            indicator_alert(pais, changed_rows[pais.pk])
     logger.info('sync_indicadores_fin', extra={'actualizados': report['actualizados'], 'errores': len(report['errores']), 'paises_procesados': report['paises_procesados'], 'paises': report['paises']})
     return report
 

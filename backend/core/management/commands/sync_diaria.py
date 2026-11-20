@@ -12,10 +12,16 @@ logger = logging.getLogger('datapulse')
 class Command(BaseCommand):
     help = 'Sincroniza indicadores y cambios, recalcula IRPC y falla ante resultados incompletos.'
 
+    def add_arguments(self, parser):
+        parser.add_argument('--task', choices=['all', 'indicadores', 'tipos_cambio'], default='all',
+                            help='Seleccionar una tarea para ejecutarla en un job independiente.')
+
     def handle(self, *args, **options):
         report = {'ok': True, 'tareas': {}}
-        for name, operation in [('indicadores', tasks.sync_and_recalculate),
+        for name, operation in [('indicadores', lambda: tasks.sync_and_recalculate(batch=True)),
                                 ('tipos_cambio', tasks.exchange_and_recalculate)]:
+            if options['task'] not in ('all', name):
+                continue
             try:
                 result = operation()
                 failed = bool(result.get('errores') or result.get('riesgo', {}).get('errores'))

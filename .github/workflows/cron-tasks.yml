@@ -14,10 +14,15 @@ concurrency:
 
 jobs:
   sync-diaria:
+    name: sync-${{ matrix.task }}
     # Never expose database credentials to PRs or manually selected branches.
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        task: [indicadores, tipos_cambio]
     environment: production-maintenance
     env:
       SECRET_KEY: ${{ secrets.DATAPULSE_SECRET_KEY }}
@@ -29,7 +34,7 @@ jobs:
       SECURE_SSL_REDIRECT: "True"
       CAPTCHA_ENFORCED: "True"
       API_DOCS_ENABLED: "False"
-      EXTERNAL_API_TIMEOUT: "10"
+      EXTERNAL_API_TIMEOUT: "5"
     steps:
       - uses: actions/checkout@v4
       - name: Require production configuration and encrypted PostgreSQL
@@ -61,10 +66,12 @@ jobs:
         run: uv run --frozen --no-dev python backend/manage.py migrate --check
       - name: Verify audit chain before maintenance
         run: uv run --frozen --no-dev python backend/manage.py verificar_auditoria
-      - name: Sync indicators, exchange rates and recalculate IRPC
+      - name: Sync selected source and recalculate IRPC
         run: |
           set -euo pipefail
-          uv run --frozen --no-dev python backend/manage.py sync_diaria | tee maintenance-report.json
+          uv run --frozen --no-dev python backend/manage.py sync_diaria --task "$SYNC_TASK" | tee maintenance-report.json
+        env:
+          SYNC_TASK: ${{ matrix.task }}
       - name: Verify audit chain after maintenance
         if: ${{ !cancelled() }}
         run: uv run --frozen --no-dev python backend/manage.py verificar_auditoria
@@ -72,7 +79,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: maintenance-report
+          name: maintenance-${{ matrix.task }}
           path: maintenance-report.json
           if-no-files-found: ignore
           retention-days: 7

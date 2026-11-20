@@ -113,14 +113,22 @@ para esta tarea: deben coincidir con la base existente. Si falta configuración,
 el workflow falla. La verificación de auditoría previa evita escribir con una clave
 equivocada. La concurrencia impide solapar dos ejecuciones de mantenimiento.
 
-`sync_diaria` intenta indicadores + recálculo y cambio diario + recálculo, incluso
-si falla la primera operación. Conserva los datos anteriores ante fallos de proveedor.
+El workflow ejecuta `sync_diaria --task indicadores` y
+`sync_diaria --task tipos_cambio` en jobs independientes, con `fail-fast: false`:
+una demora o fallo de World Bank no impide el cambio diario. Cada job recalcula
+el IRPC y verifica la auditoría. Sin `--task`, el comando intenta ambas operaciones
+en secuencia. Conserva los datos anteriores ante fallos de proveedor.
+El mantenimiento consulta los países agrupados por indicador (seis peticiones
+habituales), según la [estructura oficial de World Bank](https://datahelpdesk.worldbank.org/knowledgebase/articles/898581-api-basic-call-structures).
+Se conserva el modo por país de la API interactiva y se reutilizan las mismas
+validaciones, transacciones y reglas de alertas al persistir cada registro.
 Datos sin cambios cuentan como éxito; errores parciales, totales o de recálculo
 producen salida distinta de cero y un informe JSON por tarea. El workflow conserva
 ese informe como artifact y verifica de nuevo la cadena de auditoría.
 
 Tras configurar secretos, ejecutar Actions → Cron de sincronización programada →
-Run workflow, rama `main`, y revisar el artifact `maintenance-report`. Un check verde
+Run workflow, rama `main`, y revisar `maintenance-indicadores` y
+`maintenance-tipos_cambio`. Un check verde
 sin informe de ambas tareas no constituye evidencia de sincronización.
 
 ## Sincronización final
