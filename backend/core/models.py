@@ -62,6 +62,22 @@ class SyncJob(models.Model):
             condition=models.Q(estado__in=['PENDIENTE', 'EJECUTANDO']), name='sync_un_trabajo_activo')]
 
 
+class MaintenanceRun(models.Model):
+    tarea = models.CharField(max_length=20, choices=[(v, v) for v in ['indicadores', 'tipos_cambio', 'paises']])
+    iniciado = models.DateTimeField(default=timezone.now)
+    terminado = models.DateTimeField(null=True)
+    estado = models.CharField(max_length=15, default='EJECUTANDO')
+    actualizados = models.PositiveIntegerField(default=0)
+    errores = models.JSONField(default=list)
+    cobertura = models.JSONField(default=list)
+    commit = models.CharField(max_length=40, blank=True)
+    run_id = models.CharField(max_length=30, blank=True)
+
+    class Meta:
+        ordering = ['-iniciado', '-pk']
+        indexes = [models.Index(fields=['tarea', '-iniciado'], name='maintenance_task_started')]
+
+
 class SyncWorkerPulse(models.Model):
     actualizado = models.DateTimeField(default=timezone.now)
 

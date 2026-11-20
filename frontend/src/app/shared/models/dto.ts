@@ -197,6 +197,9 @@ export interface SyncReport {
   riesgo?: { calculados: number; existentes: number; errores?: { pais: string; code: string }[] };
 }
 export interface RiskQuality {
+  tasas_externas_ventana?: number;
+  dias_externos_consecutivos?: number;
+  ventana_externa_completa?: boolean;
   indicadores_externos: number;
   indicadores_manuales: number;
   indicadores_sinteticos: number;

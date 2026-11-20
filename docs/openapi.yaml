@@ -784,6 +784,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/dashboard/mantenimiento/:
+    get:
+      operationId: dashboard_mantenimiento_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: Un número de página dentro del conjunto de resultados paginado.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Número de resultados a devolver por página.
+        schema:
+          type: integer
+      tags:
+      - dashboard
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMaintenanceTaskList'
+          description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/dashboard/mapa/:
     get:
       operationId: dashboard_mapa_list
@@ -2465,6 +2504,65 @@ components:
       required:
       - mfa_required
       - mfa_token
+    MaintenanceRun:
+      type: object
+      properties:
+        id:
+          type: string
+        estado:
+          type: string
+        iniciado:
+          type: string
+          format: date-time
+        terminado:
+          type: string
+          format: date-time
+          nullable: true
+        actualizados:
+          type: integer
+        errores:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        cobertura:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        commit:
+          type: string
+        ejecucion_url:
+          type: string
+          format: uri
+          nullable: true
+      required:
+      - actualizados
+      - cobertura
+      - commit
+      - ejecucion_url
+      - errores
+      - estado
+      - id
+      - iniciado
+      - terminado
+    MaintenanceTask:
+      type: object
+      properties:
+        tarea:
+          type: string
+        ultima_ejecucion:
+          allOf:
+          - $ref: '#/components/schemas/MaintenanceRun'
+          nullable: true
+        ultimo_exito:
+          allOf:
+          - $ref: '#/components/schemas/MaintenanceRun'
+          nullable: true
+      required:
+      - tarea
+      - ultima_ejecucion
+      - ultimo_exito
     Map:
       type: object
       properties:
@@ -2612,6 +2710,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LogActividad'
+    PaginatedMaintenanceTaskList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaintenanceTask'
     PaginatedMapList:
       type: object
       required:

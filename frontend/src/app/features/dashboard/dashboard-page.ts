@@ -20,6 +20,7 @@ import { MapLatam } from './map-latam';
 import { chartNumber } from '../../shared/utils/decimal';
 import { RiskQualityComponent } from '../../shared/components/risk-quality';
 import { SyncStateService } from './sync-state.service';
+import { MaintenanceStatus } from './maintenance-status';
 @Component({
   imports: [
     UiModule,
@@ -29,6 +30,7 @@ import { SyncStateService } from './sync-state.service';
     DataChart,
     MapLatam,
     RiskQualityComponent,
+    MaintenanceStatus,
   ],
   providers: [SyncStateService],
   template: `<div class="page-heading">
@@ -187,6 +189,7 @@ import { SyncStateService } from './sync-state.service';
         }
       </section>
       @if (auth.user?.rol === 'ADMIN') {
+        <app-maintenance-status />
         <section class="panel admin-actions">
           <div>
             <h3>Actualización de datos</h3>

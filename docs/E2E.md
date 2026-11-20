@@ -29,7 +29,9 @@ Dieciséis casos: ocho flujos en Chromium a 1920×1080 y a 768×1024:
    bandera local cargada, gráficos y ausencia de desborde horizontal.
 4. ADMIN encola con 202, recarga la página, recupera la misma ejecución y consulta
    un resultado PARCIAL con errores explícitos del proveedor. País muestra calidad
-   de datos demo independientemente de completitud.
+   de datos demo independientemente de completitud. ADMIN ve el estado vacío
+   explícito del mantenimiento; VIEWER no ve el panel. Regresiones unitarias/API
+   verifican último éxito conservado tras fallo, errores seguros y ventana externa.
 5. ADMIN edita un portafolio privado ajeno: bloquea nombre duplicado del dueño,
    permite un nombre ocupado solo por ADMIN y guarda con permisos correctos.
 6. Registro real, entrada al dashboard y redirección/mensaje cuando access y refresh

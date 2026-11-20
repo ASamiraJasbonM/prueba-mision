@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "0 2 * * *"
   workflow_dispatch:
+    inputs:
+      incluir_paises:
+        description: Validar también REST Countries con su clave personal
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -22,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        task: [indicadores, tipos_cambio]
+        task: ${{ fromJSON(inputs.incluir_paises && '["indicadores","tipos_cambio","paises"]' || '["indicadores","tipos_cambio"]') }}
     environment: production-maintenance
     env:
       SECRET_KEY: ${{ secrets.DATAPULSE_SECRET_KEY }}
@@ -34,7 +39,8 @@ jobs:
       SECURE_SSL_REDIRECT: "True"
       CAPTCHA_ENFORCED: "True"
       API_DOCS_ENABLED: "False"
-      EXTERNAL_API_TIMEOUT: "5"
+      EXTERNAL_API_TIMEOUT: "20"
+      REST_COUNTRIES_API_KEY: ${{ secrets.DATAPULSE_REST_COUNTRIES_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - name: Require production configuration and encrypted PostgreSQL

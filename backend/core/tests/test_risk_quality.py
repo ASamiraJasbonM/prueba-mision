@@ -5,6 +5,26 @@ from .helpers import APICase, country
 
 
 class RiskQualityTests(APICase):
+    def test_external_window_requires_31_distinct_consecutive_days_for_30_changes(self):
+        from core.services.risk_quality import risk_quality, KINDS
+        now = timezone.now()
+        risk = IndiceRiesgo(fecha_calculo=now, detalle_calculo={'parcial': False,
+            'fuentes': {kind: {'fuente': 'WORLD_BANK', 'anio': now.year-1} for kind in KINDS},
+            'tasas': [{'fecha': str(now.date()-timedelta(days=i)), 'fuente': 'EXCHANGE_RATE_API'} for i in range(31)]})
+        quality = risk_quality(risk)
+        self.assertTrue(quality['ventana_externa_completa'])
+        self.assertEqual(quality['dias_externos_consecutivos'], 31)
+        self.assertTrue(quality['solo_fuentes_externas'])
+        risk.detalle_calculo['tasas'][4]['fuente'] = 'DEMO_SINTETICO'
+        quality = risk_quality(risk)
+        self.assertEqual(quality['tasas_externas_ventana'], 30)
+        self.assertEqual(quality['dias_externos_consecutivos'], 4)
+        self.assertFalse(quality['ventana_externa_completa'])
+        self.assertTrue(quality['requiere_revision'])
+        risk.detalle_calculo['tasas'] = [risk.detalle_calculo['tasas'][0]] * 31
+        quality = risk_quality(risk)
+        self.assertEqual(quality['tasas_externas_ventana'], 1)
+        self.assertFalse(quality['solo_fuentes_externas'])
     def test_complete_inputs_do_not_hide_demo_manual_or_stale_data(self):
         pais = country()
         now = timezone.now()

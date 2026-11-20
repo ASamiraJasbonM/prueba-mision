@@ -11,6 +11,10 @@ import { RiskQuality } from '../models/dto';
         {{ q.indicadores_sinteticos }} sintéticos · {{ q.indicadores_sin_origen }} sin origen.</span>
       @if (!compact()) {
         <span>Cambio: {{ q.tasas_externas }}/{{ q.tasas_total }} observaciones externas · {{ q.tasas_sinteticas }} sintéticas.</span>
+        @if (q.tasas_externas_ventana !== undefined) {
+          <span>Ventana externa: {{ q.tasas_externas_ventana }}/31 fechas · {{ q.dias_externos_consecutivos }} día(s) consecutivos hasta hoy UTC.
+            {{ q.ventana_externa_completa ? 'Permite 30 variaciones diarias externas.' : 'Aún no permite 30 variaciones diarias externas.' }}</span>
+        }
         <span>Antigüedad: cálculo {{ q.dias_desde_calculo }} día(s) · última tasa
           {{ q.dias_desde_tasa === null ? 'sin fecha' : q.dias_desde_tasa + ' día(s)' }}.</span>
         @if (q.indicadores_rezagados.length) {

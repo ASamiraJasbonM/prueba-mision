@@ -11,6 +11,7 @@ describe('Risk input transparency', () => {
     fixture.componentRef.setInput('quality', {
       indicadores_externos: 4, indicadores_manuales: 1, indicadores_sinteticos: 1, indicadores_sin_origen: 0,
       tasas_externas: 1, tasas_sinteticas: 30, tasas_total: 31, indicadores_rezagados: ['DEUDA_PIB'],
+      tasas_externas_ventana: 1, dias_externos_consecutivos: 1, ventana_externa_completa: false,
       dias_desde_tasa: 4, dias_desde_calculo: 3, solo_fuentes_externas: false, datos_rezagados: true, requiere_revision: true,
     });
     fixture.detectChanges();
@@ -19,5 +20,7 @@ describe('Risk input transparency', () => {
     expect(text).toContain('1 manuales/no verificados');
     expect(text).toContain('30 sintéticas');
     expect(text).toContain('DEUDA_PIB');
+    expect(text).toContain('1/31');
+    expect(text).toContain('1 día(s) consecutivos');
   });
 });

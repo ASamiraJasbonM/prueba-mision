@@ -114,6 +114,7 @@ test('stale edits show a conflict and require an explicit reviewed resubmission'
 
 test('viewer cannot write and country flags work under production CSP on both viewports', async ({ page, request }, info) => {
   await login(page, 'viewer');
+  await expect(page.getByRole('region', { name: 'Mantenimiento programado' })).toHaveCount(0);
   await expect(page.locator('.ranking table').getByRole('columnheader')).toHaveText([
     'País', 'IRPC', 'Nivel', 'Variación', 'Tendencia',
   ]);
@@ -138,6 +139,9 @@ test('viewer cannot write and country flags work under production CSP on both vi
 
 test('admin submits a durable background sync and sees partial provider results after reloading', async ({ page }) => {
   await login(page, 'admin');
+  const maintenance = page.getByRole('region', { name: 'Mantenimiento programado' });
+  await expect(maintenance).toBeVisible();
+  await expect(maintenance.getByText('Sin ejecuciones registradas.', { exact: false })).toHaveCount(3);
   const accepted = page.waitForResponse(r => r.request().method() === 'POST' && r.url().endsWith('/paises/sync-indicadores/'));
   await page.getByRole('button', { name: 'Sincronizar indicadores', exact: true }).click();
   const response = await accepted;

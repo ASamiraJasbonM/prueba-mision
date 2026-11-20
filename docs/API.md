@@ -162,3 +162,24 @@ Producción deshabilita /api/docs/ por defecto; /api/schema/ permanece público.
 OpenAPI versionado documenta unión de respuestas login, MFA, nuevos errores y
 cabeceras. Angular incorpora CAPTCHA y login MFA; falta la UI de enrolamiento. Ver
 [integración](INTEGRACION_SEGURIDAD.md) y [seguridad](SEGURIDAD.md).
+
+## Seguimiento del mantenimiento programado
+
+`GET /api/dashboard/mantenimiento/` requiere ADMIN. Devuelve las tareas
+`indicadores`, `tipos_cambio` y `paises`, cada una con `ultima_ejecucion` y
+`ultimo_exito` (null si no hay historial). Cada intento contiene estado, fechas UTC,
+actualizados, errores de códigos acotados, cobertura por país, commit y enlace a
+GitHub si el comando se ejecutó en Actions. Nunca devuelve excepciones crudas,
+cabeceras ni secretos. Un intento en ejecución durante más de 35 minutos se
+presenta como INTERRUMPIDA; no se transforma en éxito. La migración no inventa
+historial de ejecuciones anteriores.
+
+La cobertura económica resume los 30 registros esperados por país (seis tipos,
+cinco años), distinguiendo externos, no verificados y ausentes. La cambiaria
+cuenta fechas externas únicas en los últimos 31 días y días consecutivos hasta
+hoy UTC. Es una instantánea al terminar el intento, no una certificación del proveedor.
+
+`calidad_datos` añade `tasas_externas_ventana`, `dias_externos_consecutivos` y
+`ventana_externa_completa`. Son 31 fechas externas consecutivas las que permiten
+30 variaciones diarias externas; duplicados, fuentes sintéticas y huecos no
+completan esa ventana. El score IRPC y sus pesos no cambian.

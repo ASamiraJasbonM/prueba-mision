@@ -11,6 +11,8 @@ from .risk_api import latest_risks, user_alerts
 from .services.numbers import quantize
 from .services.sync import INDICATORS
 from .services.risk_quality import risk_quality
+from .permissions import EsAdmin
+from .services import maintenance
 
 COLORS = {'BAJO': '#22c55e', 'MODERADO': '#eab308', 'ALTO': '#f97316', 'CRITICO': '#ef4444'}
 
@@ -51,9 +53,32 @@ class TrendSerializer(serializers.Serializer):
     fuente = serializers.CharField(allow_null=True)
 
 
+class MaintenanceRunSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    estado = serializers.CharField()
+    iniciado = serializers.DateTimeField()
+    terminado = serializers.DateTimeField(allow_null=True)
+    actualizados = serializers.IntegerField()
+    errores = serializers.ListField(child=serializers.DictField())
+    cobertura = serializers.ListField(child=serializers.DictField())
+    commit = serializers.CharField(allow_blank=True)
+    ejecucion_url = serializers.URLField(allow_null=True)
+
+
+class MaintenanceTaskSerializer(serializers.Serializer):
+    tarea = serializers.CharField()
+    ultima_ejecucion = MaintenanceRunSerializer(allow_null=True)
+    ultimo_exito = MaintenanceRunSerializer(allow_null=True)
+
+
 class DashboardViewSet(viewsets.GenericViewSet):
     serializer_class = DashboardSummarySerializer
     filter_backends = []
+
+    @extend_schema(responses=MaintenanceTaskSerializer(many=True))
+    @action(detail=False, methods=['get'], permission_classes=[EsAdmin])
+    def mantenimiento(self, request):
+        return Response(maintenance.summary())
 
     @extend_schema(responses=DashboardSummarySerializer)
     @action(detail=False, methods=['get'])

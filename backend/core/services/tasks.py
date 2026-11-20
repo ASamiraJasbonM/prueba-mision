@@ -1,5 +1,5 @@
 import logging
-from .sync import sync_indicators, sync_exchange
+from .sync import sync_indicators, sync_exchange, sync_countries
 from .risk import recalculate
 
 logger = logging.getLogger('datapulse')

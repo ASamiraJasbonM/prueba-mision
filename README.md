@@ -69,6 +69,16 @@ Las adaptaciones de modelo, campos de transparencia y endpoints adicionales est�
 
 ## Estado
 
+ADMIN puede consultar el último intento y último éxito del mantenimiento desde el
+dashboard (polling cada minuto), con errores y cobertura por país. Los intentos se
+registran desde la migración 0009; ausencia de historial no equivale a éxito.
+El cron mantiene indicadores y monedas independientes, usa timeout de proveedor
+de 20 segundos y permite añadir REST Countries al dispararlo manualmente con
+`incluir_paises=true` y DATAPULSE_REST_COUNTRIES_API_KEY en production-maintenance.
+La ventana cambiaria externa acumula 31 fechas únicas consecutivas para 30
+variaciones diarias. Las tasas demo se conservan identificadas hasta que exista
+una observación real para esa fecha; no se presenta histórico sintético como real.
+
 Evidencia por etapa en `docs/ETAPAS.md`. El prompt backend del usuario tiene prioridad sobre decisiones recomendadas de `PLAN_CORREGIDO.md`.
 
 La revisión posterior está en [Cierre de observaciones P1–P9](docs/CIERRE_OBSERVACIONES.md), con commits, decisiones y [salida completa de los cinco comandos finales](docs/observaciones/P9.md). Los resultados históricos 0–10 se conservan como evidencia de la evolución; el contrato vigente incluye las correcciones posteriores.

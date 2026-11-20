@@ -1,5 +1,9 @@
 # Fuentes técnicas consultadas
 
+Revisión de mantenimiento 20-nov-2026:
+- [Históricos ExchangeRate-API](https://www.exchangerate-api.com/docs/historical-data-requests): requieren plan de pago; la modalidad existente acumula datos diarios, sin backfill inventado.
+- [Sintaxis GitHub Actions](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax): input booleano workflow_dispatch para añadir países a la matriz sin afectar el cron normal.
+
 - Django: https://www.djangoproject.com/download/ (rama elegida 5.2 LTS, versiones exactas en pyproject.toml + uv.lock).
 - DRF: https://www.django-rest-framework.org/community/3.16-announcement/
 - World Bank: https://datahelpdesk.worldbank.org/knowledgebase/articles/898581-api-basic-call-structures

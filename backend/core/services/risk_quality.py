@@ -1,5 +1,5 @@
 """Describe input provenance without changing scores or reclassifying legacy manual data."""
-from datetime import date
+from datetime import date, timedelta
 from django.utils import timezone
 
 KINDS = ['PIB', 'PIB_PERCAPITA', 'INFLACION', 'DESEMPLEO', 'DEUDA_PIB', 'BALANZA_COMERCIAL']
@@ -31,12 +31,26 @@ def risk_quality(risk):
     calculation_days = max(0, (today-risk.fecha_calculo.date()).days)
     external_rates = sum(row.get('fuente') == 'EXCHANGE_RATE_API' for row in rates)
     synthetic_rates = sum(row.get('fuente') == 'DEMO_SINTETICO' for row in rates)
-    external_only = counts['WORLD_BANK'] == 6 and bool(rates) and external_rates == len(rates)
+    external_dates = set()
+    for row in rates:
+        try:
+            day = date.fromisoformat(row['fecha'])
+        except (ValueError, KeyError, TypeError):
+            continue
+        if row.get('fuente') == 'EXCHANGE_RATE_API' and today-timedelta(days=30) <= day <= today:
+            external_dates.add(day)
+    consecutive = 0
+    while consecutive < 31 and today-timedelta(days=consecutive) in external_dates:
+        consecutive += 1
+    complete = consecutive == 31
+    external_only = counts['WORLD_BANK'] == 6 and complete and external_rates == len(rates)
     invalid_rate_dates = len(dates) != len(rates) or any(value > today for value in dates)
     stale = bool(delayed or undated) or invalid_rate_dates or rate_days is None or rate_days > 2 or calculation_days > 1
     return {'indicadores_externos': counts['WORLD_BANK'], 'indicadores_manuales': counts['MANUAL'],
         'indicadores_sinteticos': counts['DEMO_SINTETICO'], 'indicadores_sin_origen': counts['UNKNOWN'],
         'tasas_externas': external_rates, 'tasas_sinteticas': synthetic_rates, 'tasas_total': len(rates),
+        'tasas_externas_ventana': len(external_dates), 'dias_externos_consecutivos': consecutive,
+        'ventana_externa_completa': complete,
         'indicadores_rezagados': sorted(delayed), 'indicadores_sin_fecha': sorted(undated), 'dias_desde_tasa': rate_days,
         'dias_desde_calculo': calculation_days, 'solo_fuentes_externas': external_only,
         'datos_rezagados': stale, 'requiere_revision': not external_only or stale or bool(detail.get('parcial', True))}

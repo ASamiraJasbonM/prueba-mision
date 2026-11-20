@@ -15,6 +15,7 @@ deben interpretarse como el estado actual del sistema.
 | Instalación local | setup_local genera claves independientes y no sobrescribe .env | scripts/setup_local.py y su regresión |
 | Acceso demo | Tres roles con DataPulse2026!, sin staff/superuser en las cuentas desplegadas | prepare_evaluation_accounts y verificaciones HTTP |
 | Tareas programadas | Dos jobs independientes, secretos restringidos a main, TLS y auditoría | cron-tasks.yml e informes por proveedor |
+| Seguimiento del mantenimiento | ADMIN consulta último intento, último éxito, códigos de error y cobertura por país; no fabrica historial anterior | MaintenanceRun, migración 0009 y dashboard/mantenimiento |
 | Pruebas | Django, Karma/Jasmine, infraestructura Node y Playwright desktop/tablet | workflows y docs/E2E.md |
 | Operación | Readiness de base/caché, cuotas compartidas y serializadas en PostgreSQL | health.py, throttling.py, migración 0007 y regresiones de concurrencia |
 | Consultas de riesgo | Ranking e históricos con valor anterior calculado en SQL y país precargado | risk_api.py y pruebas de presupuesto de consultas |
@@ -44,10 +45,23 @@ externa/manual/sintética, antigüedad y ausencias de fecha. Un cálculo con tod
 campos puede seguir requiriendo revisión; su puntuación no se altera. Los MANUAL
 antiguos se conservan como no verificados y los nuevos seeds se etiquetan sintéticos.
 
-REST Countries tiene cliente y pruebas controladas, pero aún requiere clave y una
-validación real independiente. No se presenta como comprobada. El seed contiene
+REST Countries tiene cliente y pruebas controladas. El workflow permite añadir su
+job independiente con `incluir_paises=true`, usando el secreto de entorno
+DATAPULSE_REST_COUNTRIES_API_KEY. Requiere clave y validación real independiente;
+solo una ejecución exitosa acredita esa integración. El seed contiene
 datos sintéticos etiquetados; las sincronizaciones reemplazan solo los registros
 disponibles, conservando trazabilidad y faltantes explícitos.
+
+El último fallo de mantenimiento auditado (run 44712863509, anterior a esta
+revisión) registró 39 ConnectionError de World Bank y cero actualizaciones;
+monedas sí pasó. El cron aumenta EXTERNAL_API_TIMEOUT de 5 a 20 segundos: una
+sonda individual real tardó 14,4 segundos, mientras la agrupada superó 15. El
+fallback y los reintentos se conservan. Esto no garantiza disponibilidad futura;
+la ejecución posterior y su informe son la evidencia de recuperación.
+
+La ventana externa se acumula diariamente. La fuente gratuita no ofrece backfill
+histórico; no se compran planes ni se relabelan tasas demo. Calidad muestra fechas
+externas únicas /31 y días consecutivos; hacen falta 31 fechas para 30 variaciones.
 
 ## Límites que continúan
 
