@@ -46,6 +46,11 @@ Listados: `{count,next,previous,results}`, `page`, `page_size` (20 por defecto, 
 
 Extensiones: GET `/api/health/` devuelve `{}`; GET `/api/portafolios/nombre-disponible/?nombre=...&excluir_id=...` sirve para validación async exacta por dueño. El borrado lógico no libera el nombre.
 
+Con `excluir_id`, disponibilidad exige permiso de edición sobre ese portafolio y
+consulta los nombres de su propietario, también cuando ADMIN edita uno ajeno.
+Un objeto privado ajeno no visible devuelve 404; visible sin permiso de escritura,
+403. No admite elegir arbitrariamente un usuario para consultar sus nombres.
+
 La sincronización transita PENDIENTE → EJECUTANDO → COMPLETADA/PARCIAL/FALLIDA.
 `Location` y `estado_url` apuntan a su consulta. Solo existe una sincronización ADMIN
 activa; repetir envío devuelve esa ejecución. Idempotency-Key conserva HTTP 202 y
@@ -155,5 +160,5 @@ Auth devuelve Cache-Control:no-store incluso en errores; CORS admite
 Idempotency-Key e If-Match. If-Match fuerte/Decimal/UTC siguen iguales.
 Producción deshabilita /api/docs/ por defecto; /api/schema/ permanece público.
 OpenAPI versionado documenta unión de respuestas login, MFA, nuevos errores y
-cabeceras. Angular actual requiere evolución para CAPTCHA/MFA; ver
+cabeceras. Angular incorpora CAPTCHA y login MFA; falta la UI de enrolamiento. Ver
 [integración](INTEGRACION_SEGURIDAD.md) y [seguridad](SEGURIDAD.md).

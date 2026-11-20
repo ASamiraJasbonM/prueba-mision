@@ -8,7 +8,7 @@ export default defineConfig({
   forbidOnly: !!process.env['CI'],
   retries: 0,
   timeout: 45000,
-  globalTimeout: 300000,
+  globalTimeout: 600000,
   expect: { timeout: 10000 },
   reporter: [['list'], ['html', { open: 'never' }]],
   use: { baseURL, trace: 'retain-on-failure', screenshot: 'only-on-failure' },

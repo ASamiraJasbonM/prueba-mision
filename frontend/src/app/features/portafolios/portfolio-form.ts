@@ -24,10 +24,10 @@ import { errorMessage } from '../../core/http/error-parser';
           <mat-form-field
             ><mat-label>Nombre del portafolio</mat-label
             ><input matInput formControlName="nombre" maxlength="100" /><mat-hint
-              >Entre 3 y 100 caracteres. Único para tu usuario.</mat-hint
+              >Entre 3 y 100 caracteres. Único para el propietario.</mat-hint
             ><mat-error>{{
               form.controls.nombre.hasError('taken')
-                ? 'Ya tienes un portafolio con este nombre.'
+                ? 'El propietario ya tiene un portafolio con este nombre.'
                 : form.controls.nombre.hasError('unavailable')
                   ? 'No pudimos comprobar el nombre. Cambia el texto para reintentar.'
                   : 'Ingresa entre 3 y 100 caracteres.'
@@ -101,7 +101,6 @@ export class PortfolioForm {
             void this.router.navigate(['/sin-permiso']);
             return;
           }
-          if (p.usuario !== this.auth.user?.id) this.form.controls.nombre.clearAsyncValidators();
           this.form.patchValue(p);
           this.ready.set(true);
         },

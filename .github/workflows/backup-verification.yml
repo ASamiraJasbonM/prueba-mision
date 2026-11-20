@@ -1,0 +1,71 @@
+name: Respaldo y verificación de recuperación
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+    inputs:
+      sync_countries:
+        description: Actualizar los diez países con REST Countries después del backup
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: datapulse-production-maintenance
+  cancel-in-progress: false
+
+jobs:
+  backup-and-restore:
+    if: github.ref == 'refs/heads/main' && vars.DATAPULSE_BACKUPS_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production-maintenance
+    env:
+      SECRET_KEY: ${{ secrets.DATAPULSE_SECRET_KEY }}
+      AUDIT_HMAC_KEY: ${{ secrets.DATAPULSE_AUDIT_HMAC_KEY }}
+      FIELD_ENCRYPTION_KEY: ${{ secrets.DATAPULSE_FIELD_ENCRYPTION_KEY }}
+      MFA_KEY: ${{ secrets.DATAPULSE_MFA_KEY }}
+      DATABASE_URL: ${{ secrets.DATAPULSE_DATABASE_URL }}
+      DATAPULSE_BACKUP_KEY: ${{ secrets.DATAPULSE_BACKUP_KEY }}
+      REST_COUNTRIES_API_KEY: ${{ secrets.DATAPULSE_REST_COUNTRIES_API_KEY }}
+      DEBUG: "False"
+      SECURE_SSL_REDIRECT: "True"
+      CAPTCHA_ENFORCED: "True"
+      API_DOCS_ENABLED: "False"
+      EXTERNAL_API_TIMEOUT: "10"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.13.9"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv sync --frozen --no-dev
+      - name: Verify schema before the read-only snapshot
+        run: uv run --frozen --no-dev python backend/manage.py migrate --check
+      - name: Encrypt a consistent snapshot and restore only in a disposable PostgreSQL
+        run: uv run --frozen --no-dev python scripts/backup_verify.py --output backups/encrypted
+      - name: Sync real country metadata when explicitly requested
+        if: github.event_name == 'workflow_dispatch' && inputs.sync_countries
+        run: uv run --frozen --no-dev python backend/manage.py sync_paises > country-report.json
+      - name: Verify audit chain after optional synchronization
+        if: ${{ !cancelled() }}
+        run: uv run --frozen --no-dev python backend/manage.py verificar_auditoria
+      - name: Preserve only ciphertext, checksum and verification reports
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: encrypted-backup-${{ github.run_id }}
+          path: |
+            backups/encrypted/*.fernet
+            backups/encrypted/*.sha256
+            backups/encrypted/verification.json
+            country-report.json
+          if-no-files-found: error
+          retention-days: 14

@@ -1,6 +1,7 @@
 import re
 from django.db.models import Q
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from rest_framework import serializers, viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -216,7 +217,12 @@ class PortafolioViewSet(viewsets.ModelViewSet):
     def nombre_disponible(self, request):
         serializer = AvailabilityQuerySerializer(data=request.query_params)
         serializer.is_valid(raise_exception=True)
-        records = Portafolio.todos.filter(usuario=request.user, nombre=serializer.validated_data['nombre'])
+        owner = request.user
+        if 'excluir_id' in serializer.validated_data:
+            target = get_object_or_404(self.get_queryset(), pk=serializer.validated_data['excluir_id'])
+            domain.check_writer(request.user, target)
+            owner = target.usuario
+        records = Portafolio.todos.filter(usuario=owner, nombre=serializer.validated_data['nombre'])
         if 'excluir_id' in serializer.validated_data:
             records = records.exclude(pk=serializer.validated_data['excluir_id'])
         return Response({'disponible': not records.exists()})

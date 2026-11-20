@@ -17,7 +17,7 @@ está fuera de `.venv`, definir E2E_PYTHON con su ruta antes de ejecutar las pru
 
 ## Qué se prueba
 
-Ocho casos: cuatro flujos en Chromium a 1920×1080 y a 768×1024:
+Dieciséis casos: ocho flujos en Chromium a 1920×1080 y a 768×1024:
 
 1. Login ANALISTA, navegación, alta de portafolio, monto inválido bloqueado,
    alta/edición de posición con decimales exactos, PDF real y borrado confirmado.
@@ -28,6 +28,13 @@ Ocho casos: cuatro flujos en Chromium a 1920×1080 y a 768×1024:
 4. ADMIN encola con 202, recarga la página, recupera la misma ejecución y consulta
    un resultado PARCIAL con errores explícitos del proveedor. País muestra calidad
    de datos demo independientemente de completitud.
+5. ADMIN edita un portafolio privado ajeno: bloquea nombre duplicado del dueño,
+   permite un nombre ocupado solo por ADMIN y guarda con permisos correctos.
+6. Registro real, entrada al dashboard y redirección/mensaje cuando access y refresh
+   JWT válidamente firmados ya expiraron y la sesión no se puede recuperar.
+7. Filtros de alertas y lectura individual/masiva persistida por usuario.
+8. Caída total de World Bank: ejecución FALLIDA persistida, dashboard y readiness
+   disponibles, controles de nueva ejecución habilitados.
 
 No hay mocks de respuestas API: navega la SPA compilada de producción y llama a
 Django real. La simulación de concurrencia realiza una segunda escritura auténtica
@@ -46,6 +53,14 @@ controlado (incluye un indicador fallido). Las respuestas de la API de negocio n
 se simulan y no se consulta World Bank real. SQLite usa transacciones IMMEDIATE para
 serializar escrituras de esta fixture; concurrencia de cola y cuotas se verifica
 por separado contra PostgreSQL. El runtime productivo usa procesos separados.
+
+Solo el servidor de fixture loopback expone `/fixture/expired-session` y
+`/fixture/provider-mode`: genera tokens ya expirados y controla el proveedor local.
+Estas rutas no pertenecen a Django, ni al contenedor/backend desplegado. No hay
+intercepción de respuestas de negocio. Cada caso de alertas usa un usuario nuevo
+para evitar que lecturas de desktop alteren las expectativas de tablet.
+El presupuesto global es diez minutos para los dieciséis recorridos; cada caso
+conserva el timeout de 45 segundos y no hay reintentos automáticos.
 
 Solo la fixture efímera usa caché en memoria, desactiva CAPTCHA y amplía throttling para ejecutar el
 recorrido de negocio sin retos humanos ni cuotas entre casos. Los controles de

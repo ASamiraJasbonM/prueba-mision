@@ -171,14 +171,23 @@ def sync_exchange(business_date=None):
 
 
 def sync_countries():
-    report = {'actualizados': 0, 'errores': []}
+    report = {'actualizados': 0, 'errores': [], 'paises_procesados': 0}
     for country in Pais.objects.select_related('moneda'):
+        report['paises_procesados'] += 1
         try:
             if not settings.REST_COUNTRIES_API_KEY:
                 raise ValueError('Falta REST_COUNTRIES_API_KEY.')
             payload = get_json(f'{settings.REST_COUNTRIES_URL}/codes.alpha_2/{country.pk}',
                 headers={'Authorization': f'Bearer {settings.REST_COUNTRIES_API_KEY}'})
-            row = payload['data']['objects'][0]
+            data = payload.get('data') if isinstance(payload, dict) else None
+            if not isinstance(data, dict):
+                raise ValueError('Respuesta inválida de REST Countries.')
+            if '_demo' in data:
+                raise ValueError('REST Countries devolvió una muestra demo, no datos autenticados.')
+            rows = data.get('objects')
+            if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict):
+                raise ValueError('Se requiere un único país en la respuesta.')
+            row = rows[0]
             if row['codes']['alpha_2'] != country.pk:
                 raise ValueError('Código no coincide.')
             with transaction.atomic():
@@ -190,10 +199,9 @@ def sync_countries():
                 for currency in row['currencies']:
                     if currency['code'] == locked.moneda_id:
                         Moneda.objects.filter(pk=locked.moneda_id).update(nombre=currency['name'])
-                coordinates = row.get('coordinates', {})
-                if isinstance(coordinates, dict) and 'lat' in coordinates and 'lng' in coordinates:
-                    locked.latitud = quantize(Decimal(str(coordinates['lat'])), INDICATOR)
-                    locked.longitud = quantize(Decimal(str(coordinates['lng'])), INDICATOR)
+                coordinates = row['coordinates']
+                locked.latitud = quantize(Decimal(str(coordinates['lat'])), INDICATOR)
+                locked.longitud = quantize(Decimal(str(coordinates['lng'])), INDICATOR)
                 locked.full_clean()
                 locked.save()
                 audit(None, 'EDITAR', locked)

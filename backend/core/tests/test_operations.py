@@ -62,7 +62,8 @@ class OperationTests(APICase):
         with patch('core.services.sync.get_json', side_effect=ValueError('Offline')):
             with self.assertRaises(CommandError):
                 call_command('sync_tipos_cambio', stdout=StringIO())
-            call_command('sync_paises', stdout=StringIO())
+            with self.assertRaises(CommandError):
+                call_command('sync_paises', stdout=StringIO())
         call_command('recalcular_irpc', stdout=StringIO())
         self.assertEqual(IndiceRiesgo.objects.count(), 1)
 

@@ -1,5 +1,31 @@
 # Despliegue gratuito: Render + Cloudflare Pages
 
+## Respaldo cifrado y verificación de restauración
+
+`.github/workflows/backup-verification.yml` ejecuta a las 04:00 UTC diariamente
+solo en main y con el entorno production-maintenance. Requiere autorización para
+extraer la base y la variable de repositorio DATAPULSE_BACKUPS_ENABLED=true. Sin
+esa variable, el job no se ejecuta. Usa las claves existentes y un secreto nuevo
+DATAPULSE_BACKUP_KEY, independiente de las claves de aplicación; conservar su copia
+de recuperación fuera de Git. No se rota al desplegar.
+
+El origen exige PostgreSQL con TLS y se consulta en una transacción READ ONLY con
+snapshot exportado: pg_dump y conteos usan la misma instantánea. Solo se conservan
+ciphertext Fernet autenticado, SHA256 y un informe seguro durante 14 días como
+artifact. No se suben dump plano ni claves. Se utiliza cliente/servidor temporal de
+la misma versión mayor que el origen, incluyendo la ruta de datos de PostgreSQL 18.
+La restauración solo admite un contenedor nuevo marcado por la herramienta: nunca
+una URL de destino productiva. Verifica conteos, esquema y cadena HMAC de auditoría.
+
+Ejecución manual: Actions → Respaldo y verificación de recuperación → Run workflow.
+Activar sync_countries únicamente con el secreto DATAPULSE_REST_COUNTRIES_API_KEY
+configurado en production-maintenance; primero termina el respaldo y después se
+ejecuta el comando real de metadatos. Los errores del proveedor hacen fallar el job
+y quedan en country-report.json. Las muestras demo del proveedor se rechazan.
+
+Retención de 14 días no sustituye archivo de largo plazo: descargar y custodiar
+copias y clave antes de la caducidad del hosting. Recuperación: [RESTORE](docs/RESTORE.md).
+
 ## Render
 
 1. New > Web Service > repositorio `ASamiraJasbonM/prueba-mision`.

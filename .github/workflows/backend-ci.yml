@@ -56,7 +56,7 @@ jobs:
           cache-dependency-glob: uv.lock
       - run: uv lock --check
       - name: Verify release orchestration
-        run: python -m unittest discover -s scripts/tests -v
+        run: uv run --frozen python -m unittest discover -s scripts/tests -v
       - run: uv sync --frozen
       - run: uv run --frozen python backend/manage.py check
       - name: Production deployment checks

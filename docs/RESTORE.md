@@ -1,5 +1,38 @@
 # Backup y recuperación (U3; controles U2 y señales U1)
 
+## Procedimiento automatizado vigente (Fernet)
+
+Ejecutar desde la raíz con Python 3.12/uv, Docker activo y las cuatro claves de
+aplicación del origen. Inyectar DATABASE_URL externa con sslmode=require o más
+fuerte, y DATAPULSE_BACKUP_KEY (Fernet independiente). No imprimirlas ni pasarlas
+como argumentos. La copia local de recuperación está en backups/recovery-key.env,
+ignorada por Git y con permisos restringidos al usuario; custodiar también offline.
+
+```powershell
+uv run --frozen python scripts/backup_verify.py --output backups/encrypted
+# Repetir solo la restauración de una copia ya existente:
+uv run --frozen python scripts/backup_verify.py --archive RUTA.dump.fernet --output backups/verification
+```
+
+La herramienta nunca restaura en DATABASE_URL. Crea un PostgreSQL nuevo con tmpfs,
+credenciales aleatorias, puerto loopback y label propio; comprueba 33 tablas en el
+esquema actual, migraciones y auditoría antes de destruir solo ese contenedor.
+La cantidad de tablas se deriva del snapshot, no está hardcodeada como criterio.
+No ejecutar migrate ni seed sobre el origen como parte del respaldo.
+
+Verificación del 20-nov-2026: copia cifrada de la base demo PostgreSQL 18 restaurada
+en aislamiento, 33 tablas con conteos coincidentes, esquema actual y auditoría válida.
+También se verificó una fixture PostgreSQL 16. La prueba no acredita un SLA ni una
+restauración sobre el hosting original. El workflow diario conserva artifacts 14
+días; revisar resultado, descargar archivo y conservar su clave antes de que expiren.
+Las versiones SHA256 sirven de comprobación adicional; Fernet autentica todo el
+dump y su manifiesto de conteos. Una clave incorrecta no permite recuperar la copia.
+
+## Procedimiento manual anterior (GPG)
+
+Los scripts siguientes conservan compatibilidad con archivos .dump.gpg; no usan la
+clave Fernet ni son el formato del workflow automatizado.
+
 Objetivos propuestos RTO4h/RPO24h; ver [BCP](BCP.md). Ensayar una copia autorizada
 en base aislada, nunca probar restore destructivo en la demo/producción. Requiere
 shell POSIX Linux/WSL, clientes PostgreSQL **misma versión mayor que servidor**,

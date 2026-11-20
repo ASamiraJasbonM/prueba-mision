@@ -119,9 +119,9 @@ Con crecimiento de −3% se cuentan seis factores: estabilidad pasa de 70 a 35 p
 
 ## Portafolios y concurrencia
 
-Público significa visible para otros, editable solo por dueño ANALISTA o ADMIN. VIEWER consulta/exporta pero no escribe. Todos los cambios bloquean el portafolio con `select_for_update()` en `transaction.atomic()`; también crear posiciones. PUT y POST de posiciones incluyen `version` actual del portafolio en JSON. DELETE de portafolio y de posición exigen la cabecera `If-Match: "N"`, donde N es la versión del portafolio padre; no usan body ni query param. Cada escritura incrementa versión; un valor antiguo devuelve 409 y revierte toda la transacción. GET detalle/resumen devuelve versión y `ETag: "N"`. CORS permite If-Match y expone ETag a Angular. El control de versión se prueba en SQLite y en PostgreSQL (61 pruebas, sin skips). Los bloqueos reales de concurrencia requieren PostgreSQL.
+Público significa visible para otros, editable solo por dueño ANALISTA o ADMIN. VIEWER consulta/exporta pero no escribe. Todos los cambios bloquean el portafolio con `select_for_update()` en `transaction.atomic()`; también crear posiciones. PUT y POST de posiciones incluyen `version` actual del portafolio en JSON. DELETE de portafolio y de posición exigen la cabecera `If-Match: "N"`, donde N es la versión del portafolio padre; no usan body ni query param. Cada escritura incrementa versión; un valor antiguo devuelve 409 y revierte toda la transacción. GET detalle/resumen devuelve versión y `ETag: "N"`. CORS permite If-Match y expone ETag a Angular. Las regresiones de precisión y concurrencia se ejecutan en PostgreSQL en Backend CI; los conteos vigentes corresponden al commit evaluado.
 
-Posiciones activas tienen salida null; el límite de USD 50 millones y la distribución se calculan sobre activas. Editar excluye la posición actual del conteo y total. Borrado de portafolio es lógico y su nombre permanece reservado por usuario. La validación asíncrona usa GET `/api/portafolios/nombre-disponible/?nombre=...&excluir_id=...`.
+Posiciones activas tienen salida null; el límite de USD 50 millones y la distribución se calculan sobre activas. Editar excluye la posición actual del conteo y total. Borrado de portafolio es lógico y su nombre permanece reservado por usuario. La validación asíncrona usa GET `/api/portafolios/nombre-disponible/?nombre=...&excluir_id=...`; al editar exige permiso de escritura y comprueba nombres del propietario, incluso cuando ADMIN edita un portafolio ajeno.
 
 Decisión propia, no exigida por el PDF: las posiciones cerradas no se reabren ni editan; PUT devuelve 400 con la versión vigente. Cerrar el mismo día de entrada devuelve 400 porque el PDF exige `fecha_salida > fecha_entrada`. DELETE fija la salida UTC y conserva el registro; no hay borrado físico de posiciones cerradas. Para registrar una corrección se crea una nueva posición y se referencia el registro original en sus notas. No se documenta «eliminarla y recrearla» como una operación disponible, porque borraría la trazabilidad y esa ruta no existe. Una versión obsoleta sigue devolviendo 409 antes de validar la edición.
 
@@ -178,15 +178,18 @@ Decisión explícita respecto al modelo del PDF: `LogActividad.usuario` admite `
 
 La identidad de posiciones demo es estable entre días; no se crean nuevas inversiones por cambiar de fecha. Variaciones nuevas siempre usan la tasa del día anterior realmente persistida, aunque el seed conserve tasas previas importadas o editadas.
 
-Regiones, coordenadas y selección de moneda siguen el PDF (PA=PAB, EC=USD). Población, indicadores y tasas son **sintéticos para demostración**: no son cifras financieras reales ni descargas de proveedores. Indicadores usan fuente MANUAL y tasas DEMO_SINTETICO. Sincronizar reemplaza los registros disponibles por sus fuentes reales, conserva el resto y mantiene faltantes explícitos.
+Regiones, coordenadas y selección de moneda siguen el PDF (PA=PAB, EC=USD). Población, indicadores y tasas son **sintéticos para demostración**: no son cifras financieras reales ni descargas de proveedores. Nuevos indicadores y tasas usan DEMO_SINTETICO; registros MANUAL antiguos conservan su etiqueta no verificada. Sincronizar reemplaza los registros disponibles por sus fuentes reales, conserva el resto y mantiene faltantes explícitos.
 
 | Usuario | Rol | Contraseña demo |
 |---|---|---|
-| admin@datapulse.com | ADMIN (también superusuario Admin Django) | DataPulse2026! |
+| admin@datapulse.com | ADMIN de la API; sin staff/superuser en la demo desplegada | DataPulse2026! |
 | analista@datapulse.com | ANALISTA | DataPulse2026! |
 | viewer@datapulse.com | VIEWER | DataPulse2026! |
 
 Son credenciales públicas de prueba exigidas por el enunciado; no son secretos de infraestructura. Seed no restablece contraseñas de usuarios existentes. En un entorno no demo no ejecutar este comando.
+
+El seed local crea inicialmente el ADMIN como superusuario para inspección de desarrollo.
+La preparación de cuentas de evaluación retira staff/superuser del ADMIN desplegado.
 
 ## Pruebas y PostgreSQL
 
@@ -197,12 +200,12 @@ uv run --frozen python backend/manage.py spectacular --validate --fail-on-warn -
 uv run --frozen python scripts/check_numeric_policy.py
 ```
 
-El runner usa base efímera limpia. Tests verifican constraints, auth/roles, conflictos de versión/rollback, posiciones, IRPC y umbrales, parciales, deduplicación/lectura global, fallos de proveedores, comandos, dashboard, PDF y seed. HTTP externo usa respuestas controladas: no necesita red para pruebas. Dos pruebas específicas de precisión grande y escritores simultáneos se omiten en SQLite y se habilitan en PostgreSQL.
+El runner usa base efímera limpia. Tests verifican constraints, auth/roles, conflictos de versión/rollback, posiciones, IRPC y umbrales, parciales, deduplicación/lectura global, fallos de proveedores, comandos, dashboard, PDF y seed. HTTP externo usa respuestas controladas: no necesita red para pruebas. Las pruebas que dependen de bloqueos/precisión de PostgreSQL se omiten en SQLite; los skips están identificados por el runner.
 
 Para PostgreSQL local con Docker activo: definir `POSTGRES_PASSWORD` en `.env`, ejecutar `docker compose up -d db` y establecer `DATABASE_URL=postgresql://datapulse:TU_PASSWORD@localhost:5432/datapulse` (escapar caracteres reservados en URL). Ejecutar migrate, seed y toda la suite de nuevo. La cuenta local necesita permiso de crear la base efímera de pruebas; la cuenta creada por el contenedor lo tiene. El volumen conserva datos entre reinicios; no usar `down -v` si se desean conservar.
 
-La suite completa se valida en PostgreSQL sin skips y en SQLite con dos omisiones
-específicas de PostgreSQL, en [Backend CI](https://github.com/ASamiraJasbonM/prueba-mision/actions/workflows/backend-ci.yml).
+La suite completa se valida en PostgreSQL sin skips y en SQLite con las omisiones
+específicas del motor, en [Backend CI](https://github.com/ASamiraJasbonM/prueba-mision/actions/workflows/backend-ci.yml).
 El scheduler del despliegue es [Cron de sincronización programada](https://github.com/ASamiraJasbonM/prueba-mision/actions/workflows/cron-tasks.yml):
 su informe permite verificar indicadores, tipos de cambio y recálculos reales.
 REST Countries sigue requiriendo una clave personal y verificación independiente.

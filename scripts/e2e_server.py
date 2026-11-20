@@ -54,14 +54,33 @@ def main():
         connections.close_all()
         django_app = get_wsgi_application()
         csp = json.loads((ROOT / 'frontend/docker/csp-policy.json').read_text())
+        provider_unavailable = Event()
 
         def application(environ, start_response):
             path = environ.get('PATH_INFO', '/')
+            if path == '/fixture/provider-mode' and environ.get('REQUEST_METHOD') == 'POST':
+                if environ.get('QUERY_STRING') == 'unavailable':
+                    provider_unavailable.set()
+                else:
+                    provider_unavailable.clear()
+                start_response('204 No Content', [])
+                return [b'']
+            if path == '/fixture/expired-session':
+                from datetime import timedelta
+                from rest_framework_simplejwt.tokens import RefreshToken
+                from core.models import Usuario
+                refresh = RefreshToken.for_user(Usuario.objects.get(email='analista@datapulse.com'))
+                access = refresh.access_token
+                access.set_exp(lifetime=timedelta(seconds=-1))
+                refresh.set_exp(lifetime=timedelta(seconds=-1))
+                body = json.dumps({'access': str(access), 'refresh': str(refresh)}).encode()
+                start_response('200 OK', [('Content-Type', 'application/json'), ('Cache-Control', 'no-store')])
+                return [body]
             if path.startswith('/provider/world-bank/country/'):
                 # Only the upstream provider is controlled; SPA/API/queue/worker are real.
                 parts = path.split('/')
                 code, indicator = parts[-3], parts[-1]
-                if indicator == 'GC.DOD.TOTL.GD.ZS':
+                if provider_unavailable.is_set() or indicator == 'GC.DOD.TOTL.GD.ZS':
                     payload = {'error': 'Controlled provider failure'}
                 else:
                     from datetime import datetime, timezone
@@ -91,6 +110,7 @@ def main():
 
         class Server(ThreadingMixIn, WSGIServer):
             daemon_threads = True
+            request_queue_size = 128
 
         class QuietHandler(WSGIRequestHandler):
             def log_message(self, format, *args):
