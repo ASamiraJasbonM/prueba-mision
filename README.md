@@ -18,25 +18,31 @@ no hay un workflow de despliegue separado.
 
 En Render, `CORS_ALLOWED_ORIGINS=https://datapulse-latam.pages.dev` y
 `ALLOWED_HOSTS=datapulse-backend-vkc5.onrender.com`. Las claves y la conexión
-PostgreSQL se guardan fuera de Git; las cuentas desplegadas tienen contraseñas
-aleatorias y no usan la contraseña pública del seed local.
+PostgreSQL se guardan fuera de Git. Este despliegue es exclusivamente de evaluación,
+con datos demo: `admin@datapulse.com` (ADMIN), `analista@datapulse.com` (ANALISTA) y
+`viewer@datapulse.com` (VIEWER) usan `DataPulse2026!`, como exige el enunciado.
+El ADMIN demo tiene permisos de la API, sin acceso de superusuario al Admin Django.
+Estas credenciales públicas no deben utilizarse en una base con datos reales.
 
 Verificación del 19 de noviembre de 2026: salud HTTP 200, preflight CORS desde
 Pages, login de analista, consulta autenticada de 10 países, CAPTCHA PNG y
 fallback de una ruta interna Angular. Los datos iniciales son DEMO sintéticos.
 
-## Desarrollo local (PowerShell, Python 3.12 y uv 0.10.11)
+## Desarrollo local (PowerShell, Python 3.12 y uv 0.13.9)
 
 ```powershell
 uv sync --frozen
-Copy-Item .env.example .env
-# Sustituir SECRET_KEY en .env por un secreto aleatorio local.
+uv run --frozen python scripts/setup_local.py
 uv run --frozen python backend/manage.py check
 uv run --frozen python backend/manage.py migrate
 uv run --frozen python backend/manage.py seed_data
 uv run --frozen python backend/manage.py runserver 127.0.0.1:8000
 ```
 
+El inicializador genera las cuatro claves independientes (incluida Fernet válida) y
+la contraseña PostgreSQL local. Si `.env` ya existe, lo conserva sin cambios; no
+rota claves de una base existente. Para configuración manual, generar todas las
+claves indicadas en `.env.example`, no solo SECRET_KEY.
 La configuración lee `.env` desde la raíz. `SECRET_KEY` es obligatorio. SQLite local; PostgreSQL mediante `DATABASE_URL`. `DEBUG=False` activa cookies seguras y redirección HTTPS salvo ajuste explícito para un proxy de desarrollo.
 
 uv crea y mantiene `.venv`; no se instala el proyecto con pip. `pyproject.toml` declara las dependencias directas y las restricciones transitivas verificadas; `uv.lock` fija resolución, fuentes y hashes. Python queda acotado a `>=3.12,<3.13` para conservar el entorno validado. Las pruebas actuales no requieren paquetes adicionales: el grupo `dev` está vacío. Ver [gestión de dependencias con uv](docs/DEPENDENCIAS_UV.md).

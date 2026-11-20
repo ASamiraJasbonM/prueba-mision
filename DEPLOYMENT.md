@@ -34,9 +34,21 @@ uv run --frozen python backend/manage.py migrate --noinput
 uv run --frozen python backend/manage.py seed_data
 ```
 
-`seed_data` crea cuentas de demostración con contraseña conocida. Antes de publicar
-el servicio, reemplazar las contraseñas de las tres cuentas por claves aleatorias
-independientes o inutilizar sus contraseñas. No ejecutar seed en cada reinicio.
+Este despliegue contiene únicamente datos de evaluación. Después del seed ejecutar
+una sola vez, con las mismas claves y conexión PostgreSQL externa:
+
+```sh
+uv run --frozen python backend/manage.py prepare_evaluation_accounts --confirm-demo
+```
+
+Configura exclusivamente `admin@datapulse.com`, `analista@datapulse.com` y
+`viewer@datapulse.com`, con roles ADMIN/ANALISTA/VIEWER y `DataPulse2026!` exigida
+por el PDF. No cambia portafolios, otras cuentas ni claves de infraestructura.
+Las tres cuentas carecen de permisos staff/superuser de Django. No deshabilita MFA:
+si alguna ya lo tiene, aborta sin cambios. Repetir el comando no rota contraseñas
+ni escribe auditoría si las cuentas ya están configuradas. No usarlo con datos reales.
+En un servicio con datos reales se mantienen credenciales privadas independientes.
+No ejecutar seed ni este comando automáticamente en cada reinicio.
 No subir la URL PostgreSQL, hooks ni claves a Git, README o logs de CI.
 
 ## Cloudflare Pages
@@ -77,6 +89,39 @@ automáticos. El sitio sigue en Pages Free y conserva el mismo dominio.
   obsoletas. Ningún despliegue puede continuar si fallan sus dependencias.
 - Reintentar desde Actions una ejecución de `main` conserva su SHA y artefacto.
   Revisar la versión activa antes de reintentar una ejecución antigua.
+
+## Tareas diarias reales
+
+La rama predeterminada del repositorio es `main`, que también es la rama desplegada.
+`.github/workflows/cron-tasks.yml` corre diariamente a las 02:00 UTC (21:00 del día
+anterior en Bogotá) o manualmente sobre `main`. Usa management commands contra
+PostgreSQL externo con TLS: no necesita un JWT ni ocupa un worker HTTP de Render.
+No aplica migraciones ni ejecuta seed; comprueba primero que el esquema esté vigente.
+
+Configurar estos cinco secretos en el entorno GitHub `production-maintenance`:
+
+| Secreto Actions | Valor de la configuración de Render |
+|---|---|
+| DATAPULSE_DATABASE_URL | URL **externa** PostgreSQL con `sslmode=require` o superior |
+| DATAPULSE_SECRET_KEY | SECRET_KEY |
+| DATAPULSE_AUDIT_HMAC_KEY | AUDIT_HMAC_KEY de la cadena existente |
+| DATAPULSE_FIELD_ENCRYPTION_KEY | FIELD_ENCRYPTION_KEY |
+| DATAPULSE_MFA_KEY | MFA_KEY |
+
+Restringir ese entorno a `main`. No imprimir secretos ni crear nuevas claves HMAC
+para esta tarea: deben coincidir con la base existente. Si falta configuración,
+el workflow falla. La verificación de auditoría previa evita escribir con una clave
+equivocada. La concurrencia impide solapar dos ejecuciones de mantenimiento.
+
+`sync_diaria` intenta indicadores + recálculo y cambio diario + recálculo, incluso
+si falla la primera operación. Conserva los datos anteriores ante fallos de proveedor.
+Datos sin cambios cuentan como éxito; errores parciales, totales o de recálculo
+producen salida distinta de cero y un informe JSON por tarea. El workflow conserva
+ese informe como artifact y verifica de nuevo la cadena de auditoría.
+
+Tras configurar secretos, ejecutar Actions → Cron de sincronización programada →
+Run workflow, rama `main`, y revisar el artifact `maintenance-report`. Un check verde
+sin informe de ambas tareas no constituye evidencia de sincronización.
 
 ## Sincronización final
 

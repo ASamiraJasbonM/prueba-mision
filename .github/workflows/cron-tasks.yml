@@ -1,16 +1,5 @@
 name: Cron de sincronización programada
 
-# Acredita la ejecución programada (Sección 3.1) además de la sincronización
-# bajo demanda disponible vía POST /api/paises/sync-indicadores/.
-#
-# Este workflow está listo para producción pero requiere credenciales de
-# despliegue que no se versionan:
-#   - DATAPULSE_API_URL   : URL pública del backend (p. ej. https://api.ejemplo.com)
-#   - DATAPULSE_SYNC_TOKEN: JWT de acceso de un usuario ADMIN o token de servicio.
-#
-# Nota: el despliegue en Render usa plan gratuito y expira a los 30 días. Si la
-# URL no responde, levantar el proyecto en local con `docker compose up`.
-
 on:
   schedule:
     - cron: "0 2 * * *"
@@ -19,21 +8,71 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: datapulse-production-maintenance
+  cancel-in-progress: false
+
 jobs:
-  sync-indicadores:
+  sync-diaria:
+    # Never expose database credentials to PRs or manually selected branches.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
+    environment: production-maintenance
+    env:
+      SECRET_KEY: ${{ secrets.DATAPULSE_SECRET_KEY }}
+      AUDIT_HMAC_KEY: ${{ secrets.DATAPULSE_AUDIT_HMAC_KEY }}
+      FIELD_ENCRYPTION_KEY: ${{ secrets.DATAPULSE_FIELD_ENCRYPTION_KEY }}
+      MFA_KEY: ${{ secrets.DATAPULSE_MFA_KEY }}
+      DATABASE_URL: ${{ secrets.DATAPULSE_DATABASE_URL }}
+      DEBUG: "False"
+      SECURE_SSL_REDIRECT: "True"
+      CAPTCHA_ENFORCED: "True"
+      API_DOCS_ENABLED: "False"
+      EXTERNAL_API_TIMEOUT: "10"
     steps:
-      - name: Sincronizar indicadores (bajo demanda programada)
-        env:
-          API_URL: ${{ secrets.DATAPULSE_API_URL }}
-          SYNC_TOKEN: ${{ secrets.DATAPULSE_SYNC_TOKEN }}
+      - uses: actions/checkout@v4
+      - name: Require production configuration and encrypted PostgreSQL
         run: |
           set -euo pipefail
-          if [ -z "${API_URL:-}" ] || [ -z "${SYNC_TOKEN:-}" ]; then
-            echo "::warning::Faltan DATAPULSE_API_URL o DATAPULSE_SYNC_TOKEN. Configure los secretos de despliegue."
-            exit 0
-          fi
-          curl -fsS -X POST "${API_URL}/api/paises/sync-indicadores/" \
-            -H "Authorization: Bearer ${SYNC_TOKEN}" \
-            -H "Content-Type: application/json"
+          for key in SECRET_KEY AUDIT_HMAC_KEY FIELD_ENCRYPTION_KEY MFA_KEY DATABASE_URL; do
+            if [ -z "${!key:-}" ]; then
+              echo "::error::Missing maintenance secret: $key"
+              exit 1
+            fi
+          done
+          python - <<'PY'
+          import os
+          from urllib.parse import urlsplit, parse_qs
+          url = urlsplit(os.environ['DATABASE_URL'])
+          if url.scheme not in ('postgres', 'postgresql') or not url.hostname or parse_qs(url.query).get('sslmode') not in (['require'], ['verify-ca'], ['verify-full']):
+              raise SystemExit('DATABASE_URL must use external PostgreSQL with sslmode=require or stronger.')
+          PY
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.13.9"
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+      - run: uv sync --frozen --no-dev
+      - name: Verify schema is current without changing production
+        run: uv run --frozen --no-dev python backend/manage.py migrate --check
+      - name: Verify audit chain before maintenance
+        run: uv run --frozen --no-dev python backend/manage.py verificar_auditoria
+      - name: Sync indicators, exchange rates and recalculate IRPC
+        run: |
+          set -euo pipefail
+          uv run --frozen --no-dev python backend/manage.py sync_diaria | tee maintenance-report.json
+      - name: Verify audit chain after maintenance
+        if: ${{ !cancelled() }}
+        run: uv run --frozen --no-dev python backend/manage.py verificar_auditoria
+      - name: Preserve the business result
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: maintenance-report
+          path: maintenance-report.json
+          if-no-files-found: ignore
+          retention-days: 7
