@@ -59,6 +59,18 @@ sonda individual real tardó 14,4 segundos, mientras la agrupada superó 15. El
 fallback y los reintentos se conservan. Esto no garantiza disponibilidad futura;
 la ejecución posterior y su informe son la evidencia de recuperación.
 
+La ejecución posterior del commit fa9cd85, [run 44810035993](https://github.com/ASamiraJasbonM/prueba-mision/actions/runs/44810035993),
+terminó correctamente en indicadores y monedas. Ambos informes registraron cero
+errores, cero actualizaciones y diez IRPC existentes: los datos válidos no habían
+cambiado. Acredita consulta real y conservación idempotente, no cobertura externa
+total ni disponibilidad futura del proveedor.
+
+CI incorpora cobertura de backend (mínimo 90% de líneas) y frontend (80% de
+sentencias, 72% de ramas, 75% de funciones, 85% de líneas). Publica HTML/XML o
+HTML/LCOV en artifacts durante siete días. Los reintentos del proveedor respetan
+Retry-After con espera máxima de dos segundos y un máximo de dos reintentos,
+manteniendo el margen del lease del worker y las regresiones de precisión.
+
 La ventana externa se acumula diariamente. La fuente gratuita no ofrece backfill
 histórico; no se compran planes ni se relabelan tasas demo. Calidad muestra fechas
 externas únicas /31 y días consecutivos; hacen falta 31 fechas para 30 variaciones.

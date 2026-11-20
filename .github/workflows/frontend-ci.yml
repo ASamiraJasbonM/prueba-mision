@@ -90,11 +90,18 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci --no-audit --no-fund
-      - name: Karma and Jasmine with ChromeHeadless
+      - name: Karma and Jasmine with ChromeHeadless and coverage
         run: |
           CHROME_BIN=$(command -v google-chrome)
           export CHROME_BIN
-          npm run test:ci
+          npm run test:coverage
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-coverage
+          path: frontend/coverage/
+          if-no-files-found: error
+          retention-days: 7
 
   e2e:
     needs: lint-and-check

@@ -92,7 +92,19 @@ jobs:
       - run: uv lock --check
       - run: uv sync --frozen
       # Seed is exercised only by isolated tests, never as a CI setup command.
-      - run: uv run --frozen python backend/manage.py test -v 2
+      - name: Run tests with coverage
+        run: |
+          uv run --frozen coverage run backend/manage.py test -v 2
+          uv run --frozen coverage report
+          uv run --frozen coverage xml
+          uv run --frozen coverage html
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-coverage
+          path: coverage/
+          if-no-files-found: error
+          retention-days: 7
 
   test-postgresql:
     runs-on: ubuntu-latest

@@ -27,11 +27,31 @@ dependencies = [
 ]
 
 [dependency-groups]
-# Test runner remains Django/unittest; scanners are development/CI only.
+# Test runner remains Django/unittest; scanners and coverage are development/CI only.
 dev = [
     "bandit>=1.9.4",
     "pip-audit>=2.10.1",
+    "coverage>=7.0",
 ]
+
+[tool.coverage.run]
+source = ["backend"]
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "backend/manage.py",
+]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+fail_under = 90
+
+[tool.coverage.html]
+directory = "coverage/html"
+
+[tool.coverage.xml]
+output = "coverage/coverage.xml"
 
 [tool.uv]
 package = false

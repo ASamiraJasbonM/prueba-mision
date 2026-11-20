@@ -203,6 +203,22 @@ La preparación de cuentas de evaluación retira staff/superuser del ADMIN despl
 
 ## Pruebas y PostgreSQL
 
+La cobertura también se verifica en CI. Backend genera XML/HTML con coverage.py
+y exige al menos 90% de cobertura de líneas sobre backend, excluyendo tests y
+migraciones. Frontend genera HTML/LCOV con Karma y exige 80% de sentencias, 72% de
+ramas, 75% de funciones y 85% de líneas. Los artifacts backend-coverage y
+frontend-coverage se conservan siete días y no forman parte de las imágenes de
+producción. Una ejecución verde sigue siendo necesaria: porcentajes altos no
+sustituyen los escenarios de permisos, concurrencia y precisión de PostgreSQL.
+
+```powershell
+uv run --frozen coverage run backend/manage.py test
+uv run --frozen coverage report
+uv run --frozen coverage html
+cd frontend
+npm run test:coverage
+```
+
 ```powershell
 uv run --frozen python backend/manage.py test
 uv run --frozen python backend/manage.py makemigrations --check --dry-run
