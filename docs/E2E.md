@@ -17,7 +17,7 @@ está fuera de `.venv`, definir E2E_PYTHON con su ruta antes de ejecutar las pru
 
 ## Qué se prueba
 
-Dieciséis casos: ocho flujos en Chromium a 1920×1080 y a 768×1024:
+Dieciocho casos: nueve flujos en Chromium a 1920×1080 y a 768×1024:
 
 1. Login ANALISTA, navegación, alta de portafolio, monto inválido bloqueado,
    alta/edición de posición con agrupado automático de miles y decimales exactos,
@@ -39,6 +39,9 @@ Dieciséis casos: ocho flujos en Chromium a 1920×1080 y a 768×1024:
 7. Filtros de alertas y lectura individual/masiva persistida por usuario.
 8. Caída total de World Bank: ejecución FALLIDA persistida, dashboard y readiness
    disponibles, controles de nueva ejecución habilitados.
+9. Corrección de posición: motivo obligatorio, cancelación sin borrado, eliminación
+   confirmada y bloqueo de posiciones cerradas. Archivo de portafolio con motivo
+   de desistimiento dentro del flujo principal; conservación verificada en API.
 
 No hay mocks de respuestas API: navega la SPA compilada de producción y llama a
 Django real. La simulación de concurrencia realiza una segunda escritura auténtica

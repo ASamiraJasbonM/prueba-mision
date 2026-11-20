@@ -31,15 +31,15 @@ export class PortfolioStateService {
       this.api.delete('portafolios/' + id + '/posiciones/' + positionId + '/', version),
     );
   }
-  removePosition(id: number, positionId: number, version: number) {
+  removePosition(id: number, positionId: number, version: number, reason: string) {
     return this.write(
       id,
-      this.api.delete('portafolios/' + id + '/posiciones/' + positionId + '/eliminar/', version),
+      this.api.delete('portafolios/' + id + '/posiciones/' + positionId + '/eliminar/', version, reason),
     );
   }
-  remove(id: number, version: number) {
+  remove(id: number, version: number, reason?: string) {
     this.busy.set(true);
-    return this.api.delete('portafolios/' + id + '/', version).pipe(
+    return this.api.delete('portafolios/' + id + '/', version, reason).pipe(
       catchError((e) => this.recover(id, e)),
       finalize(() => this.busy.set(false)),
     );

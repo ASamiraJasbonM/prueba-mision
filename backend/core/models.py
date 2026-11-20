@@ -223,6 +223,8 @@ class Portafolio(ActivoModel):
 
 
 class Posicion(models.Model):
+    # Existing rows remain null: the entry/business date cannot prove creation time.
+    fecha_creacion = models.DateTimeField(default=timezone.now, null=True, editable=False)
     class TipoActivo(models.TextChoices):
         RENTA_FIJA = 'RENTA_FIJA', 'Renta fija'
         RENTA_VARIABLE = 'RENTA_VARIABLE', 'Renta variable'

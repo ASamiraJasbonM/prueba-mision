@@ -22,6 +22,7 @@ deben interpretarse como el estado actual del sistema.
 | Resumen de portafolio | Dos consultas para posiciones activas y sus últimos riesgos; una si está vacío, sin consultas por país | portfolios.py y test_portfolio_queries.py; incluye desempates, cero y datos parciales |
 | Detalles de presentación | Monto agrupa miles automáticamente sin perder centavos; ranking separa País, IRPC, Nivel, Variación y Tendencia | PositionForm, DashboardPage y regresiones unitarias/E2E |
 | Validación de nombres | ADMIN consulta nombres del propietario del portafolio editado; exige permiso de escritura | portfolio_api y E2E por propietario |
+| Correcciones y archivo | Borrado físico solo de posiciones abiertas durante 24h desde creación acreditada, con motivo y evidencia cifrada; portafolio archivado sin destruir posiciones | migración 0010, POLITICA_CORRECCIONES y pruebas de permisos/migración/E2E |
 | Recuperación | Snapshot cifrado de la base demo PostgreSQL 18 restaurado en aislamiento; 33 tablas, esquema y auditoría verificados | RESTORE y backup-verification.yml; clave independiente fuera de Git |
 
 ## Integraciones reales y duración

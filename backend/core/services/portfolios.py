@@ -1,5 +1,9 @@
 from decimal import Decimal
 from collections import defaultdict
+from datetime import timedelta
+import json
+from django.conf import settings
+from .crypto import encrypt
 
 from django.db import transaction
 from django.db.models import OuterRef, Subquery
@@ -58,11 +62,13 @@ def update_portfolio(user, pk, version, data):
 
 
 @transaction.atomic
-def delete_portfolio(user, pk, version):
+def delete_portfolio(user, pk, version, reason='ARCHIVO'):
     portfolio = lock_portfolio(user, pk, version)
+    if reason not in ['ARCHIVO', 'ERROR_CREACION', 'DUPLICADO', 'DESISTIMIENTO']:
+        raise ValidationError({'motivo': 'Selecciona un motivo válido de archivo.'})
     portfolio.activo = False
     touch(portfolio)
-    audit(user, "ELIMINAR", portfolio)
+    audit(user, "ELIMINAR", portfolio, {'archivo': True, 'motivo': reason, 'version': portfolio.version})
 
 
 def validate_position(position, exclude_pk=None):
@@ -141,13 +147,32 @@ def close_position(user, pk, position_pk, version):
     return position
 
 
+def correction_deadline(position):
+    return (position.fecha_creacion + timedelta(hours=settings.POSITION_CORRECTION_HOURS)) if position.fecha_creacion else None
+
+
+def can_correct(position):
+    deadline = correction_deadline(position)
+    return bool(deadline and position.fecha_salida is None and position.fecha_creacion <= timezone.now() < deadline)
+
+
 @transaction.atomic
-def delete_position(user, pk, position_pk, version):
+def delete_position(user, pk, position_pk, version, reason=None):
     portfolio = lock_portfolio(user, pk, version)
     position = get_object_or_404(Posicion.objects, pk=position_pk, portafolio=portfolio)
-    # Audit before deleting so the record retains its identity in the log.
+    if reason not in ['ERROR_CREACION', 'DUPLICADO']:
+        raise ValidationError({'motivo': 'Selecciona error de creación o duplicado.'})
+    if not can_correct(position):
+        raise ValidationError({'posicion': 'El plazo de corrección venció, la posición está cerrada o su creación no está acreditada. Conserva el historial y utiliza el cierre.'})
+    snapshot = {'id': position.pk, 'portafolio': portfolio.pk, 'pais': position.pais_id,
+        'tipo_activo': position.tipo_activo, 'monto_inversion_usd': str(position.monto_inversion_usd),
+        'fecha_entrada': str(position.fecha_entrada), 'fecha_salida': None,
+        'notas': position.notas, 'fecha_creacion': position.fecha_creacion.isoformat()}
     audit(
-        user, "ELIMINAR", position, {"permanente": True, "version": portfolio.version}
+        user, "ELIMINAR", position, {'permanente': True, 'motivo': reason,
+            'politica': 'CORRECCION_V1', 'version_anterior': portfolio.version,
+            'plazo_horas': settings.POSITION_CORRECTION_HOURS, 'limite_utc': correction_deadline(position).isoformat(),
+            'version': portfolio.version+1, 'snapshot_cifrado': encrypt(json.dumps(snapshot, ensure_ascii=False))}
     )
     position.delete()
     touch(portfolio)

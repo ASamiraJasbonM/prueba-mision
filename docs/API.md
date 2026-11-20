@@ -163,6 +163,16 @@ OpenAPI versionado documenta unión de respuestas login, MFA, nuevos errores y
 cabeceras. Angular incorpora CAPTCHA y login MFA; falta la UI de enrolamiento. Ver
 [integración](INTEGRACION_SEGURIDAD.md) y [seguridad](SEGURIDAD.md).
 
+## Corrección de posiciones y archivo
+
+La política de correcciones se detalla en [POLITICA_CORRECCIONES](POLITICA_CORRECCIONES.md).
+Position añade fecha_creacion nullable, eliminacion_hasta y puede_eliminar, solo
+lectura. La ruta DELETE /portafolios/{id}/posiciones/{id}/eliminar/ exige motivo
+ERROR_CREACION o DUPLICADO por query, además de If-Match. Solo posiciones abiertas
+dentro del plazo desde su creación acreditada. El DELETE original sigue cerrando.
+El DELETE del portafolio sigue siendo archivo lógico y acepta motivo opcional
+ERROR_CREACION, DUPLICADO, DESISTIMIENTO o ARCHIVO (valor de compatibilidad).
+
 ## Seguimiento del mantenimiento programado
 
 `GET /api/dashboard/mantenimiento/` requiere ADMIN. Devuelve las tareas

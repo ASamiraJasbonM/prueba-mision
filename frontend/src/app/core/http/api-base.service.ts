@@ -53,8 +53,10 @@ export class ApiBaseService {
   put<T>(path: string, data: unknown = {}): Observable<T> {
     return this.http.put<T>(this.url(path), data);
   }
-  delete<T>(path: string, version: number): Observable<T> {
-    return this.http.delete<T>(this.url(path), { headers: { 'If-Match': `"${version}"` } });
+  delete<T>(path: string, version: number, reason?: string): Observable<T> {
+    return this.http.delete<T>(this.url(path), { headers: { 'If-Match': `"${version}"` },
+      ...(reason ? { params: { motivo: reason } } : {}),
+    });
   }
   pdf(path: string): Observable<Blob> {
     return this.http.get(this.url(path), { responseType: 'blob' });

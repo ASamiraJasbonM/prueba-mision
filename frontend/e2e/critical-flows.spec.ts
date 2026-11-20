@@ -71,8 +71,49 @@ test('analyst creates, validates, edits and exports a portfolio through the real
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(errors).toEqual([]);
   await page.getByRole('button', { name: 'Eliminar portafolio', exact: true }).click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Eliminar', exact: true }).click();
+  await page.getByRole('dialog').getByLabel('Motivo').click();
+  await page.getByRole('option', { name: 'Decisión de no continuar', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Archivar', exact: true }).click();
   await expect(page).toHaveURL(/\/portafolios$/);
+});
+
+test('position correction requires a reason, supports cancellation and preserves closed positions', async ({ page, request }, info) => {
+  const auth = await apiLogin(request, 'analista');
+  const created = await request.post('/api/portafolios/', { headers: auth, data: {
+    nombre: `Correction ${info.project.name} ${Date.now()}`, descripcion: '', es_publico: false,
+  } });
+  expect(created.status()).toBe(201);
+  const portfolio = await created.json();
+  const base = `/api/portafolios/${portfolio.id}/`;
+  const result = await request.post(base+'posiciones/', { headers: auth, data: {
+    pais: 'CO', tipo_activo: 'RENTA_FIJA', monto_inversion_usd: '1000.00', fecha_entrada: yesterday, notas: '', version: 1,
+  } });
+  expect(result.status()).toBe(201);
+  await login(page);
+  await page.goto(`/portafolios/${portfolio.id}`);
+  const row = page.getByRole('row').filter({ hasText: 'Colombia' });
+  await row.getByRole('button', { name: 'Eliminar', exact: true }).click();
+  let dialog = page.getByRole('dialog');
+  await expect(dialog.getByRole('button', { name: 'Eliminar', exact: true })).toBeDisabled();
+  await dialog.getByRole('button', { name: 'Cancelar', exact: true }).click();
+  expect((await (await request.get(base, { headers: auth })).json()).posiciones.length).toBe(1);
+  await row.getByRole('button', { name: 'Eliminar', exact: true }).click();
+  dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Motivo').click();
+  await page.getByRole('option', { name: 'Duplicado', exact: true }).click();
+  const deleted = page.waitForResponse(r => r.request().method()==='DELETE' && r.url().includes('/eliminar/'));
+  await dialog.getByRole('button', { name: 'Eliminar', exact: true }).click();
+  expect((await deleted).status()).toBe(204);
+  await expect(row).toHaveCount(0);
+  const next = await request.post(base+'posiciones/', { headers: auth, data: {
+    pais: 'CO', tipo_activo: 'RENTA_FIJA', monto_inversion_usd: '1000.00', fecha_entrada: yesterday, notas: '', version: 3,
+  } });
+  expect(next.status()).toBe(201);
+  expect((await request.delete(base+`posiciones/${(await next.json()).id}/`, { headers: { ...auth, 'If-Match': '"4"' } })).status()).toBe(200);
+  await page.reload();
+  await expect(row).toContainText('Cerrada');
+  await expect(row.getByRole('button', { name: 'Eliminar', exact: true })).toBeDisabled();
+  expect((await request.delete(base, { headers: { ...auth, 'If-Match': '"5"' } })).status()).toBe(204);
 });
 
 test('stale edits show a conflict and require an explicit reviewed resubmission', async ({ page, request }, info) => {

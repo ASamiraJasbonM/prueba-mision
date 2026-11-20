@@ -26,8 +26,8 @@ describe('PortfolioStateService', () => {
     expect(state.busy()).toBeFalse();
   });
   it('hard-deletes a position via the eliminar endpoint and refreshes', () => {
-    state.removePosition(7, 3, 2).subscribe();
-    const req = http.expectOne('/api/portafolios/7/posiciones/3/eliminar/');
+    state.removePosition(7, 3, 2, 'DUPLICADO').subscribe();
+    const req = http.expectOne('/api/portafolios/7/posiciones/3/eliminar/?motivo=DUPLICADO');
     expect(req.request.method).toBe('DELETE');
     expect(req.request.headers.get('If-Match')).toBe('"2"');
     req.flush(null, { status: 204, statusText: 'No Content' });

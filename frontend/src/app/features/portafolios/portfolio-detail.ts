@@ -198,7 +198,8 @@ import { utcToday } from '../../shared/utils/dates';
                     mat-button
                     color="warn"
                     (click)="removePosition(x)"
-                    [disabled]="state.busy() || !state.fresh()"
+                    [disabled]="state.busy() || !state.fresh() || !x.puede_eliminar"
+                    [matTooltip]="x.puede_eliminar ? 'Corrección disponible hasta ' + x.eliminacion_hasta : 'Solo se corrigen posiciones abiertas dentro del plazo desde su creación acreditada. Utiliza el cierre.'"
                   >
                     Eliminar
                   </button>
@@ -327,36 +328,38 @@ export class PortfolioDetailPage {
   }
   removePosition(position: Position): void {
     const p = this.state.detail();
-    if (!p || !this.auth.canEdit(p) || this.state.busy() || !this.state.fresh()) return;
+    if (!p || !this.auth.canEdit(p) || this.state.busy() || !this.state.fresh() || !position.puede_eliminar) return;
     this.confirm(
-      'Eliminar posición',
-      'La posición se eliminará de forma permanente y no se podrá recuperar.',
+      'Corregir posición creada por error',
+      'Disponible hasta ' + position.eliminacion_hasta + '. Se retirará la posición y se conservará evidencia cifrada en auditoría. No hay deshacer automático.',
       'Eliminar',
-      () =>
+      (reason) =>
         this.state
-          .removePosition(this.id, position.id, this.state.detail()!.version)
+          .removePosition(this.id, position.id, this.state.detail()!.version, reason!)
           .subscribe({ next: () => this.notify.show('Posición eliminada.'), error: () => {} }),
+      [{ value: 'ERROR_CREACION', label: 'Error de creación' }, { value: 'DUPLICADO', label: 'Duplicado' }],
     );
   }
   remove(): void {
     const p = this.state.detail();
     if (!p || !this.auth.canEdit(p) || this.state.busy() || !this.state.fresh()) return;
     this.confirm(
-      'Eliminar portafolio',
-      'El portafolio dejará de estar disponible. Confirma que deseas eliminarlo.',
-      'Eliminar',
-      () =>
+      'Archivar portafolio',
+      'El portafolio dejará de estar disponible. Sus posiciones e historial se conservan, incluso si abandonaste la idea o era una réplica. No se borrarán físicamente.',
+      'Archivar',
+      (reason) =>
         this.state
-          .remove(this.id, this.state.detail()!.version)
+          .remove(this.id, this.state.detail()!.version, reason)
           .subscribe({ next: () => void this.router.navigate(['/portafolios']), error: () => {} }),
+      [{ value: 'ERROR_CREACION', label: 'Error de creación' }, { value: 'DUPLICADO', label: 'Duplicado' }, { value: 'DESISTIMIENTO', label: 'Decisión de no continuar' }, { value: 'ARCHIVO', label: 'Archivo de portafolio' }],
     );
   }
-  private confirm(title: string, message: string, action: string, callback: () => void): void {
+  private confirm(title: string, message: string, action: string, callback: (reason?: string) => void, motivos?: {value: string; label: string}[]): void {
     this.dialog
-      .open(ConfirmDialogComponent, { data: { title, message, action }, width: '460px' })
+      .open(ConfirmDialogComponent, { data: { title, message, action, motivos }, width: '460px' })
       .afterClosed()
       .subscribe((confirmed) => {
-        if (confirmed) callback();
+        if (confirmed) callback(typeof confirmed === 'string' ? confirmed : undefined);
       });
   }
   pdf(): void {

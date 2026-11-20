@@ -131,6 +131,9 @@ export interface Portfolio {
   version: number;
 }
 export interface Position {
+  fecha_creacion?: string | null;
+  eliminacion_hasta?: string | null;
+  puede_eliminar?: boolean;
   id: number;
   portafolio: number;
   pais: string;

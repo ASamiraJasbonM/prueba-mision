@@ -30,6 +30,15 @@ IF_MATCH_PARAMETER = OpenApiParameter(
 
 
 class PositionSerializer(serializers.ModelSerializer):
+    eliminacion_hasta = serializers.SerializerMethodField()
+    puede_eliminar = serializers.SerializerMethodField()
+
+    @extend_schema_field(serializers.DateTimeField(allow_null=True))
+    def get_eliminacion_hasta(self, obj):
+        return domain.correction_deadline(obj)
+
+    def get_puede_eliminar(self, obj) -> bool:
+        return domain.can_correct(obj)
     class Meta:
         model = Posicion
         fields = [
@@ -41,8 +50,9 @@ class PositionSerializer(serializers.ModelSerializer):
             "fecha_entrada",
             "fecha_salida",
             "notas",
+            "fecha_creacion", "eliminacion_hasta", "puede_eliminar",
         ]
-        read_only_fields = ["id", "portafolio", "fecha_salida"]
+        read_only_fields = ["id", "portafolio", "fecha_salida", "fecha_creacion"]
 
     def validate_fecha_entrada(self, value):
         from django.utils import timezone
@@ -209,7 +219,8 @@ class PortafolioViewSet(viewsets.ModelViewSet):
 
     @extend_schema(
         request=None,
-        parameters=[IF_MATCH_PARAMETER],
+        parameters=[IF_MATCH_PARAMETER,
+            OpenApiParameter('motivo', str, OpenApiParameter.QUERY, enum=['ARCHIVO', 'ERROR_CREACION', 'DUPLICADO', 'DESISTIMIENTO'])],
         responses={
             204: None,
             400: ErrorResponseSerializer,
@@ -218,7 +229,7 @@ class PortafolioViewSet(viewsets.ModelViewSet):
     )
     def destroy(self, request, *args, **kwargs):
         portfolio = self.get_object()
-        domain.delete_portfolio(request.user, portfolio.pk, delete_version(request))
+        domain.delete_portfolio(request.user, portfolio.pk, delete_version(request), request.query_params.get('motivo', 'ARCHIVO'))
         return Response(status=204)
 
     @extend_schema(request=PositionWriteSerializer, responses={201: PositionSerializer})
@@ -285,6 +296,7 @@ class PortafolioViewSet(viewsets.ModelViewSet):
         parameters=[
             OpenApiParameter("posicion_id", int, OpenApiParameter.PATH),
             IF_MATCH_PARAMETER,
+            OpenApiParameter('motivo', str, OpenApiParameter.QUERY, required=True, enum=['ERROR_CREACION', 'DUPLICADO']),
         ],
     )
     @action(
@@ -295,7 +307,7 @@ class PortafolioViewSet(viewsets.ModelViewSet):
     def eliminar_posicion(self, request, pk=None, posicion_id=None):
         portfolio = self.get_object()
         domain.delete_position(
-            request.user, portfolio.pk, posicion_id, delete_version(request)
+            request.user, portfolio.pk, posicion_id, delete_version(request), request.query_params.get('motivo')
         )
         return Response(status=status.HTTP_204_NO_CONTENT)
 

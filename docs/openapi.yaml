@@ -1484,6 +1484,15 @@ paths:
           type: integer
         description: Un valor de entero único que identifique este portafolio.
         required: true
+      - in: query
+        name: motivo
+        schema:
+          type: string
+          enum:
+          - ARCHIVO
+          - DESISTIMIENTO
+          - DUPLICADO
+          - ERROR_CREACION
       tags:
       - portafolios
       security:
@@ -1724,6 +1733,14 @@ paths:
         schema:
           type: integer
         description: Un valor de entero único que identifique este portafolio.
+        required: true
+      - in: query
+        name: motivo
+        schema:
+          type: string
+          enum:
+          - DUPLICADO
+          - ERROR_CREACION
         required: true
       - in: path
         name: posicion_id
@@ -3172,13 +3189,29 @@ components:
         notas:
           type: string
           maxLength: 200
+        fecha_creacion:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        eliminacion_hasta:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+        puede_eliminar:
+          type: boolean
+          readOnly: true
       required:
+      - eliminacion_hasta
+      - fecha_creacion
       - fecha_entrada
       - fecha_salida
       - id
       - monto_inversion_usd
       - pais
       - portafolio
+      - puede_eliminar
       - tipo_activo
     PositionWrite:
       type: object
@@ -3208,17 +3241,33 @@ components:
         notas:
           type: string
           maxLength: 200
+        fecha_creacion:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        eliminacion_hasta:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+        puede_eliminar:
+          type: boolean
+          readOnly: true
         version:
           type: integer
           minimum: 1
           writeOnly: true
       required:
+      - eliminacion_hasta
+      - fecha_creacion
       - fecha_entrada
       - fecha_salida
       - id
       - monto_inversion_usd
       - pais
       - portafolio
+      - puede_eliminar
       - tipo_activo
       - version
     Profile:

@@ -170,7 +170,7 @@ class PortfolioTests(APICase):
         self.assertEqual(position.status_code, 201)
         self.assertEqual(Posicion.objects.count(), 1)
         response = self.client.delete(
-            url + f"posiciones/{position.data['id']}/eliminar/", HTTP_IF_MATCH='"2"'
+            url + f"posiciones/{position.data['id']}/eliminar/?motivo=ERROR_CREACION", HTTP_IF_MATCH='"2"'
         )
         self.assertEqual(response.status_code, 204)
         self.assertEqual(Posicion.objects.count(), 0)
@@ -183,7 +183,7 @@ class PortfolioTests(APICase):
         position = self.client.post(url + "posiciones/", self.position(1))
         self.assertEqual(position.status_code, 201)
         response = self.client.delete(
-            url + f"posiciones/{position.data['id']}/eliminar/", HTTP_IF_MATCH='"1"'
+            url + f"posiciones/{position.data['id']}/eliminar/?motivo=ERROR_CREACION", HTTP_IF_MATCH='"1"'
         )
         self.assertEqual(response.status_code, 409)
         self.assertEqual(Posicion.objects.count(), 1)
