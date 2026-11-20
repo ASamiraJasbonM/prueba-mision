@@ -2,6 +2,7 @@ from decimal import Decimal
 from collections import defaultdict
 
 from django.db import transaction
+from django.db.models import OuterRef, Subquery
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -122,16 +123,20 @@ def portfolio_summary(portfolio):
     by_country, by_type = defaultdict(lambda: Decimal('0')), defaultdict(lambda: Decimal('0'))
     total, covered, weighted = Decimal('0'), Decimal('0'), Decimal('0')
     missing = set()
-    risks = {}
-    positions = list(portfolio.posiciones.filter(fecha_salida__isnull=True).select_related('pais'))
+    positions = list(portfolio.posiciones.filter(fecha_salida__isnull=True))
+    country_ids = {position.pais_id for position in positions}
+    latest = IndiceRiesgo.objects.filter(pais_id=OuterRef('pais_id')).order_by('-fecha_calculo', '-pk').values('pk')[:1]
+    risks = {
+        risk.pais_id: risk
+        for risk in IndiceRiesgo.objects.filter(pais_id__in=country_ids, pk=Subquery(latest))
+        .only('pais_id', 'indice_compuesto', 'detalle_calculo')
+    } if country_ids else {}
     for position in positions:
         amount = position.monto_inversion_usd
         total += amount
         by_country[position.pais_id] += amount
         by_type[position.tipo_activo] += amount
-        if position.pais_id not in risks:
-            risks[position.pais_id] = IndiceRiesgo.objects.filter(pais=position.pais).first()
-        risk = risks[position.pais_id]
+        risk = risks.get(position.pais_id)
         if risk:
             weighted += risk.indice_compuesto * amount
             covered += amount

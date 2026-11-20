@@ -18,6 +18,8 @@ deben interpretarse como el estado actual del sistema.
 | Pruebas | Django, Karma/Jasmine, infraestructura Node y Playwright desktop/tablet | workflows y docs/E2E.md |
 | Operación | Readiness de base/caché, cuotas compartidas y serializadas en PostgreSQL | health.py, throttling.py, migración 0007 y regresiones de concurrencia |
 | Consultas de riesgo | Ranking e históricos con valor anterior calculado en SQL y país precargado | risk_api.py y pruebas de presupuesto de consultas |
+| Resumen de portafolio | Dos consultas para posiciones activas y sus últimos riesgos; una si está vacío, sin consultas por país | portfolios.py y test_portfolio_queries.py; incluye desempates, cero y datos parciales |
+| Detalles de presentación | Monto agrupa miles automáticamente sin perder centavos; ranking separa País, IRPC, Nivel, Variación y Tendencia | PositionForm, DashboardPage y regresiones unitarias/E2E |
 | Validación de nombres | ADMIN consulta nombres del propietario del portafolio editado; exige permiso de escritura | portfolio_api y E2E por propietario |
 | Recuperación | Snapshot cifrado de la base demo PostgreSQL 18 restaurado en aislamiento; 33 tablas, esquema y auditoría verificados | RESTORE y backup-verification.yml; clave independiente fuera de Git |
 

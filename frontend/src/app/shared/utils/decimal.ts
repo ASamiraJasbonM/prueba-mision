@@ -3,6 +3,15 @@ export function normalizeMoney(value: string): string {
   const text = value.trim();
   return /^\d{1,3}(,\d{3})+(\.\d{1,2})?$/.test(text) ? text.replaceAll(',', '') : text;
 }
+/** Preserve incomplete input and cents; invalid precision is never rounded away. */
+export function formatMoneyInput(value: string): string {
+  const text = /^\d{1,3}(,\d{3})+(\.\d{0,2})?$/.test(value)
+    ? value.replaceAll(',', '') : value;
+  if (!/^\d+(\.\d{0,2})?$/.test(text)) return value;
+  const [integer, fraction] = text.split('.');
+  return integer.replace(/\B(?=(\d{3})+(?!\d))/g, ',') +
+    (fraction === undefined ? '' : `.${fraction}`);
+}
 export function moneyUnits(value: string): bigint | null {
   const normalized = normalizeMoney(value);
   if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return null;

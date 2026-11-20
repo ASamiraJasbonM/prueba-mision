@@ -117,10 +117,14 @@ import { SyncStateService } from './sync-state.service';
               ><ng-container matColumnDef="nivel"
                 ><th mat-header-cell *matHeaderCellDef>Nivel</th>
                 <td mat-cell *matCellDef="let c">
-                  <app-risk-badge [level]="c.nivel_riesgo" /><small class="cell-secondary"
-                    >{{ trendLabel(c.tendencia) }} · {{ c.variacion | decimalDisplay }}</small
-                  >
+                  <app-risk-badge [level]="c.nivel_riesgo" />
                 </td></ng-container
+              ><ng-container matColumnDef="variacion"
+                ><th mat-header-cell *matHeaderCellDef title="Cambio en puntos del IRPC">Variación</th>
+                <td mat-cell *matCellDef="let c">{{ c.variacion | decimalDisplay }}</td></ng-container
+              ><ng-container matColumnDef="tendencia"
+                ><th mat-header-cell *matHeaderCellDef>Tendencia</th>
+                <td mat-cell *matCellDef="let c">{{ trendLabel(c.tendencia) }}</td></ng-container
               >
               <tr mat-header-row *matHeaderRowDef="columns"></tr>
               <tr mat-row *matRowDef="let row; columns: columns"></tr>
@@ -244,7 +248,7 @@ export class DashboardPage {
   readonly report = signal('');
   readonly today = new Date();
   readonly indicators = INDICATORS;
-  readonly columns = ['pais', 'indice', 'nivel'];
+  readonly columns = ['pais', 'indice', 'nivel', 'variacion', 'tendencia'];
   readonly years = signal<string[]>([]);
   readonly series = signal<ChartSeries[]>([]);
   readonly unit = signal('');

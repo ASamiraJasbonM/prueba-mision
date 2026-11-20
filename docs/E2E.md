@@ -20,11 +20,13 @@ está fuera de `.venv`, definir E2E_PYTHON con su ruta antes de ejecutar las pru
 Dieciséis casos: ocho flujos en Chromium a 1920×1080 y a 768×1024:
 
 1. Login ANALISTA, navegación, alta de portafolio, monto inválido bloqueado,
-   alta/edición de posición con decimales exactos, PDF real y borrado confirmado.
+   alta/edición de posición con agrupado automático de miles y decimales exactos,
+   PDF real y borrado confirmado.
 2. Edición concurrente autorizada por otro usuario, 409, relectura de la versión
    vigente y reenvío explícito después de revisar. No hay reintento ciego.
 3. VIEWER sin controles de escritura, ruta protegida y 403 del servidor; detalle
-   de país con bandera local cargada, gráficos y ausencia de desborde horizontal.
+   ranking con columnas separadas de variación y tendencia, detalle de país con
+   bandera local cargada, gráficos y ausencia de desborde horizontal.
 4. ADMIN encola con 202, recarga la página, recupera la misma ejecución y consulta
    un resultado PARCIAL con errores explícitos del proveedor. País muestra calidad
    de datos demo independientemente de completitud.

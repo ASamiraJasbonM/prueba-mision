@@ -41,6 +41,7 @@ test('analyst creates, validates, edits and exports a portfolio through the real
   await dialog.getByLabel('Monto de inversión USD').fill('999.99');
   await expect(dialog.getByRole('button', { name: 'Aplicar posición' })).toBeDisabled();
   await dialog.getByLabel('Monto de inversión USD').fill('1,234.56');
+  await expect(dialog.getByLabel('Monto de inversión USD')).toHaveValue('1,234.56');
   const created = page.waitForResponse(r => r.request().method() === 'POST' && /\/posiciones\/$/.test(r.url()));
   await dialog.getByRole('button', { name: 'Aplicar posición' }).click();
   const position = await created;
@@ -51,7 +52,9 @@ test('analyst creates, validates, edits and exports a portfolio through the real
   await row.getByRole('button', { name: 'Editar', exact: true }).click();
   dialog = page.getByRole('dialog');
   await expect(dialog.getByLabel('Buscar país')).toBeFocused();
-  await dialog.getByLabel('Monto de inversión USD').fill('2345.67');
+  await dialog.getByLabel('Monto de inversión USD').fill('');
+  await dialog.getByLabel('Monto de inversión USD').pressSequentially('2345.67');
+  await expect(dialog.getByLabel('Monto de inversión USD')).toHaveValue('2,345.67');
   const updated = page.waitForResponse(r => r.request().method() === 'PUT' && /\/posiciones\/\d+\/$/.test(r.url()));
   await dialog.getByRole('button', { name: 'Aplicar posición' }).click();
   expect((await updated).status()).toBe(200);
@@ -111,6 +114,10 @@ test('stale edits show a conflict and require an explicit reviewed resubmission'
 
 test('viewer cannot write and country flags work under production CSP on both viewports', async ({ page, request }, info) => {
   await login(page, 'viewer');
+  await expect(page.locator('.ranking table').getByRole('columnheader')).toHaveText([
+    'País', 'IRPC', 'Nivel', 'Variación', 'Tendencia',
+  ]);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.goto('/portafolios');
   await expect(page.getByRole('link', { name: 'Crear portafolio' })).toHaveCount(0);
   const viewer = await apiLogin(request, 'viewer');

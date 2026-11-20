@@ -3,7 +3,7 @@ import { AbstractControl, FormBuilder, ValidationErrors, Validators } from '@ang
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { UiModule } from '../../shared/ui.module';
 import { ASSETS, Country, PortfolioDetail, Position } from '../../shared/models/dto';
-import { moneyUnits, normalizeMoney } from '../../shared/utils/decimal';
+import { formatMoneyInput, moneyUnits, normalizeMoney } from '../../shared/utils/decimal';
 import { utcToday } from '../../shared/utils/dates';
 export interface PositionDialogData {
   countries: Country[];
@@ -45,8 +45,9 @@ export function amountValidator(control: AbstractControl): ValidationErrors | nu
             matInput
             inputmode="decimal"
             formControlName="monto_inversion_usd"
-            placeholder="1000.00"
-          /><mat-hint>De 1.000 a 10.000.000 USD · máximo dos decimales</mat-hint
+            (input)="formatAmount($event)"
+            placeholder="1,000.00"
+          /><mat-hint>1,000 a 10,000,000 USD · coma para miles, punto decimal (1,234.56)</mat-hint
           ><mat-error>Ingresa un importe válido dentro del rango.</mat-error></mat-form-field
         ><mat-form-field
           ><mat-label>Fecha de entrada</mat-label
@@ -92,7 +93,7 @@ export class PositionForm {
       ],
       tipo_activo: [this.data.position?.tipo_activo ?? 'RENTA_FIJA', Validators.required],
       monto_inversion_usd: [
-        this.data.position?.monto_inversion_usd ?? '',
+        formatMoneyInput(this.data.position?.monto_inversion_usd ?? ''),
         [Validators.required, amountValidator],
       ],
       fecha_entrada: [
@@ -109,6 +110,28 @@ export class PositionForm {
   );
   constructor() {
     this.form.updateValueAndValidity();
+  }
+  formatAmount(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const original = input.value;
+    // Typing/deleting can temporarily move existing grouping commas. Pasted input
+    // still follows the strict parser so malformed amounts are not silently accepted.
+    const editing = event instanceof InputEvent &&
+      /^(insertText|deleteContentBackward|deleteContentForward|deleteByCut)$/.test(event.inputType);
+    const text = editing && /^[\d,]+(\.\d{0,2})?$/.test(original)
+      ? original.replaceAll(',', '') : original;
+    const formatted = formatMoneyInput(text);
+    if (formatted === original) return;
+    const offset = original.slice(0, input.selectionStart ?? original.length).replaceAll(',', '').length;
+    this.form.controls.monto_inversion_usd.setValue(formatted);
+    input.value = formatted;
+    let caret = 0;
+    let consumed = 0;
+    while (caret < formatted.length && consumed < offset) {
+      if (formatted[caret] !== ',') consumed++;
+      caret++;
+    }
+    input.setSelectionRange(caret, caret);
   }
   displayCountry = (code: string): string =>
     this.data.countries.find((c) => c.codigo_iso === code)?.nombre ?? code;
