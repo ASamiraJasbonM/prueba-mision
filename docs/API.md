@@ -23,7 +23,9 @@ Listados: `{count,next,previous,results}`, `page`, `page_size` (20 por defecto, 
 | GET | `/api/paises/{codigo_iso}/` | datos e indicadores |
 | GET | `/api/paises/{codigo_iso}/indicadores/` | tipo, anio, ordering anio/tipo/valor; search en tipo/fuente/unidad (extensión) |
 | GET | `/api/paises/{codigo_iso}/tipo-cambio/` | fecha_desde, fecha_hasta (YYYY-MM-DD); ordering fecha/tasa; search en códigos de moneda/fuente (extensión) |
-| POST | `/api/paises/sync-indicadores/` | ADMIN; resultado parcial por país y recálculo encadenado; respuesta síncrona |
+| POST | `/api/paises/sync-indicadores/` | ADMIN; 202 con ID, estado y estado_url; encola sin llamadas de red |
+| GET | `/api/paises/sincronizaciones/` | ADMIN; última ejecución, o 204 si no existe |
+| GET | `/api/paises/sincronizaciones/{uuid}/` | ADMIN; estado, progreso, intentos y resultado persistido |
 | GET, POST | `/api/portafolios/` | propios+públicos; ADMIN ve todos; search y es_publico |
 | GET, PUT, DELETE | `/api/portafolios/{id}/` | detalle con posiciones/métricas y ETag; PUT requiere version en JSON; DELETE requiere If-Match |
 | POST | `/api/portafolios/{id}/posiciones/` | posición + version del portafolio |
@@ -43,6 +45,22 @@ Listados: `{count,next,previous,results}`, `page`, `page_size` (20 por defecto, 
 | GET | `/api/dashboard/tendencias/` | tipo, paises=CO,BR,MX; últimos cinco años cerrados UTC |
 
 Extensiones: GET `/api/health/` devuelve `{}`; GET `/api/portafolios/nombre-disponible/?nombre=...&excluir_id=...` sirve para validación async exacta por dueño. El borrado lógico no libera el nombre.
+
+La sincronización transita PENDIENTE → EJECUTANDO → COMPLETADA/PARCIAL/FALLIDA.
+`Location` y `estado_url` apuntan a su consulta. Solo existe una sincronización ADMIN
+activa; repetir envío devuelve esa ejecución. Idempotency-Key conserva HTTP 202 y
+el mismo ID durante cinco minutos, incluso si el trabajo termina. GET de estado
+no consume el presupuesto sync2/h, pero sí user100/min. No se expone lease_token.
+No asumir que cero actualizaciones es fallo: puede no haber datos nuevos. PARCIAL
+incluye errores finales de proveedor o recálculo; FALLIDA indica fallo total o
+interrupción no recuperable tras tres intentos.
+
+Riesgos incluyen `calidad_datos`: conteos de indicadores externos/manuales/sintéticos/
+sin origen, tasas externas/sintéticas/totales, antigüedad de cálculo y tasa,
+indicadores rezagados o sin fecha, `solo_fuentes_externas`, `datos_rezagados` y
+`requiere_revision`. Se derivan del snapshot histórico; no certifican exactitud.
+El dashboard agrega países con datos no verificados y con datos rezagados.
+Las nuevas semillas usan fuente DEMO_SINTETICO; MANUAL previo no se reclasifica.
 
 Auditoría: GET `/api/auditoria/` es una extensión de solo lectura para ADMIN. Listado paginado, filtros `accion`, `entidad_afectada`, `usuario` y ordering `fecha`/`accion`. Los eventos de comandos sin sesión tienen `usuario: null`; los interactivos conservan el identificador del usuario.
 

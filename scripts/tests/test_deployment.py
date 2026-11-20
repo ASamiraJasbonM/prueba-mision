@@ -13,6 +13,15 @@ COMMIT = 'a' * 40
 
 
 class DeploymentTests(unittest.TestCase):
+    def test_frontend_waits_for_matching_backend_without_triggering_a_deployment(self):
+        with patch.dict(os.environ, {'GITHUB_SHA': COMMIT}), \
+                patch.object(deployment.sys, 'argv', ['deploy_pipeline.py', 'wait-render']), \
+                patch.object(deployment, 'wait_for_release') as wait, \
+                patch.object(deployment, 'trigger_render') as trigger:
+            deployment.main()
+        wait.assert_called_once_with(deployment.render_ready, COMMIT, 1200)
+        trigger.assert_not_called()
+
     def test_release_is_not_ready_when_its_database_probe_is_unavailable(self):
         healthy = MagicMock(status=200, headers={'X-Deployment-Commit': COMMIT})
         healthy.__enter__.return_value = healthy

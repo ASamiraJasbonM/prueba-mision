@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.core.validators import MinValueValidator, MaxValueValidator, MinLengthValidator
 from decimal import Decimal
+import uuid
 
 
 class ActivoManager(models.Manager):
@@ -38,6 +39,31 @@ class SharedCacheEntry(models.Model):
 
     class Meta:
         db_table = 'datapulse_cache'
+
+
+class SyncJob(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    usuario = models.ForeignKey('Usuario', on_delete=models.PROTECT)
+    clase = models.CharField(max_length=20, default='INDICADORES', editable=False)
+    estado = models.CharField(max_length=15, default='PENDIENTE', choices=[
+        (value, value) for value in ['PENDIENTE', 'EJECUTANDO', 'COMPLETADA', 'PARCIAL', 'FALLIDA']])
+    creado = models.DateTimeField(default=timezone.now)
+    iniciado = models.DateTimeField(null=True)
+    terminado = models.DateTimeField(null=True)
+    progreso = models.JSONField(default=dict)
+    resultado = models.JSONField(default=dict)
+    intentos = models.PositiveSmallIntegerField(default=0)
+    lease_token = models.UUIDField(null=True, editable=False)
+    lease_until = models.DateTimeField(null=True, db_index=True)
+
+    class Meta:
+        ordering = ['-creado']
+        constraints = [models.UniqueConstraint(fields=['clase'],
+            condition=models.Q(estado__in=['PENDIENTE', 'EJECUTANDO']), name='sync_un_trabajo_activo')]
+
+
+class SyncWorkerPulse(models.Model):
+    actualizado = models.DateTimeField(default=timezone.now)
 
 
 class UsuarioManager(BaseUserManager):
@@ -132,13 +158,14 @@ class IndicadorEconomico(models.Model):
     class Fuente(models.TextChoices):
         WORLD_BANK = 'WORLD_BANK', 'World Bank'
         MANUAL = 'MANUAL', 'Manual'
+        DEMO_SINTETICO = 'DEMO_SINTETICO', 'Demostración sintética'
 
     pais = models.ForeignKey(Pais, on_delete=models.PROTECT, related_name='indicadores')
     tipo = models.CharField(max_length=20, choices=Tipo.choices)
     valor = models.DecimalField(max_digits=28, decimal_places=6)
     unidad = models.CharField(max_length=20, choices=Unidad.choices)
     anio = models.PositiveSmallIntegerField()
-    fuente = models.CharField(max_length=12, choices=Fuente.choices, default=Fuente.MANUAL)
+    fuente = models.CharField(max_length=16, choices=Fuente.choices, default=Fuente.MANUAL)
     fecha_actualizacion = models.DateTimeField(default=timezone.now)
 
     class Meta:

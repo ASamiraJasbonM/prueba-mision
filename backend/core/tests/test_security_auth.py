@@ -80,25 +80,24 @@ class SecurityAuthTests(APICase):
 
     def test_sync_third_call_throttled(self):
         self.authenticate(self.admin)
-        with patch('core.data_api.sync_and_recalculate', return_value={'ok': True}) as execute:
-            for _ in range(2):
-                self.assertEqual(self.client.post('/api/paises/sync-indicadores/').status_code, 200)
-            self.assertEqual(self.client.post('/api/paises/sync-indicadores/').status_code, 429)
-            self.assertEqual(execute.call_count, 2)
+        from core.models import SyncJob
+        for _ in range(2):
+            self.assertEqual(self.client.post('/api/paises/sync-indicadores/').status_code, 202)
+        self.assertEqual(self.client.post('/api/paises/sync-indicadores/').status_code, 429)
+        self.assertEqual(SyncJob.objects.count(), 1)
 
     def test_idempotency_isolated_by_user_endpoint_and_body(self):
         self.authenticate(self.admin)
-        def run():
-            from core.audit import audit
-            audit(self.admin, 'CONSULTAR', self.admin)
-            return {'ok': True}
-        with patch('core.data_api.sync_and_recalculate', side_effect=run) as execute:
-            for _ in range(2):
-                result = self.client.post('/api/paises/sync-indicadores/', {'a': 1}, HTTP_IDEMPOTENCY_KEY='example')
-                self.assertEqual(result.status_code, 200)
-                self.assertEqual(result.data, {'ok': True})
-            self.assertEqual(execute.call_count, 1)
-            self.assertEqual(LogActividad.objects.filter(accion='CONSULTAR').count(), 1)
-            cache.clear()
-            conflict = self.client.post('/api/paises/sync-indicadores/', {'a': 2}, HTTP_IDEMPOTENCY_KEY='example')
-            self.assertEqual(conflict.status_code, 409)
+        from core.models import SyncJob, IdempotentRequest
+        ids = []
+        for _ in range(2):
+            result = self.client.post('/api/paises/sync-indicadores/', {'a': 1}, HTTP_IDEMPOTENCY_KEY='example')
+            self.assertEqual(result.status_code, 202)
+            ids.append(result.data['id'])
+        self.assertEqual(ids[0], ids[1])
+        self.assertEqual(SyncJob.objects.count(), 1)
+        self.assertEqual(IdempotentRequest.objects.count(), 1)
+        self.assertEqual(LogActividad.objects.filter(accion='CREAR', entidad_afectada='SyncJob').count(), 1)
+        cache.clear()
+        conflict = self.client.post('/api/paises/sync-indicadores/', {'a': 2}, HTTP_IDEMPOTENCY_KEY='example')
+        self.assertEqual(conflict.status_code, 409)

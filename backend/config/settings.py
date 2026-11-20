@@ -57,6 +57,7 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'core.Usuario'
 CACHE_SHARED = env.bool('CACHE_SHARED', default=not DEBUG)
+SYNC_WORKER_REQUIRED = env.bool('SYNC_WORKER_REQUIRED', default=False)
 CACHES = {'default': {
     'BACKEND': ('core.cache.SharedDatabaseCache' if CACHE_SHARED else
                 'django.core.cache.backends.locmem.LocMemCache'),

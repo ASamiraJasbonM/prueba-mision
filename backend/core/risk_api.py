@@ -13,6 +13,7 @@ from .services.risk import recalculate
 from .audit import audit
 from .idempotency import idempotent
 from .services.numbers import quantize
+from .services.risk_quality import risk_quality
 
 
 def latest_risks():
@@ -29,6 +30,7 @@ def with_previous_risk(queryset):
 
 
 class RiesgoSerializer(serializers.ModelSerializer):
+    calidad_datos = serializers.SerializerMethodField()
     pais_nombre = serializers.CharField(source='pais.nombre', read_only=True)
     variacion = serializers.SerializerMethodField()
     tendencia = serializers.SerializerMethodField()
@@ -36,6 +38,10 @@ class RiesgoSerializer(serializers.ModelSerializer):
     class Meta:
         model = IndiceRiesgo
         fields = '__all__'
+
+    @extend_schema_field(serializers.DictField())
+    def get_calidad_datos(self, obj):
+        return risk_quality(obj)
 
     @extend_schema_field(serializers.DecimalField(max_digits=6, decimal_places=2, allow_null=True))
     def get_variacion(self, obj):

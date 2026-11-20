@@ -55,7 +55,16 @@ restringido a `main`, PostgreSQL externo con TLS y verificación de auditoría a
 después. World Bank usa consultas agrupadas y fallback por país. Los datos anteriores
 se conservan ante fallos; estos se reflejan en los informes y en el código de salida.
 La sincronización programada no depende del timeout HTTP de Gunicorn; la operación
-ADMIN bajo demanda mantiene su contrato síncrono.
+ADMIN bajo demanda encola un SyncJob y devuelve 202. Un worker supervisado junto a
+Gunicorn procesa la cola sin mantener requests abiertos. Leases de 90 segundos,
+token de propiedad y un máximo de tres intentos permiten recuperación; la base
+impide dos trabajos activos y el worker anterior no puede publicar el resultado.
+SyncWorkerPulse permite exigir salud del worker en readiness. El cron conserva su
+ejecución independiente. No se añade Redis ni se cambia el motor de referencia.
+
+`calidad_datos` se deriva del snapshot de fuentes/tasas del IRPC, sin nuevas consultas
+por registro ni alteración de la fórmula. La UI separa existencia de datos, origen y
+vigencia. Los indicadores MANUAL anteriores no se reclasifican como reales o demo.
 
 ReportLab genera un PDF tabular sin navegador. Django-environ centraliza configuración.
 SimpleJWT evita sesiones web para API; el Admin mantiene sesión/CSRF independiente.

@@ -86,10 +86,12 @@ def main():
     if sys.argv[1:] == ['render']:
         trigger_render(os.environ['RENDER_DEPLOY_HOOK_URL'], commit)
         wait_for_release(render_ready, commit, 1200)
+    elif sys.argv[1:] == ['wait-render']:
+        wait_for_release(render_ready, commit, 1200)
     elif sys.argv[1:] == ['pages']:
         wait_for_release(pages_ready, commit, 240)
     else:
-        raise ValueError('Usage: deploy_pipeline.py render|pages')
+        raise ValueError('Usage: deploy_pipeline.py render|wait-render|pages')
 
 
 if __name__ == '__main__':

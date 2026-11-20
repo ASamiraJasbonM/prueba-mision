@@ -123,6 +123,22 @@ test('viewer cannot write and country flags work under production CSP on both vi
   await expect.poll(() => flag.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
   expect(new URL((await flag.getAttribute('src'))!, page.url()).origin).toBe(new URL(page.url()).origin);
   await expect(page.locator('app-data-chart canvas')).toHaveCount(2);
+  await expect(page.locator('app-risk-quality')).toContainText('Calidad de datos: requiere revisión');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await page.screenshot({ path: info.outputPath('country.png'), fullPage: true });
+});
+
+test('admin submits a durable background sync and sees partial provider results after reloading', async ({ page }) => {
+  await login(page, 'admin');
+  const accepted = page.waitForResponse(r => r.request().method() === 'POST' && r.url().endsWith('/paises/sync-indicadores/'));
+  await page.getByRole('button', { name: 'Sincronizar indicadores', exact: true }).click();
+  const response = await accepted;
+  expect(response.status()).toBe(202);
+  const job = await response.json();
+  expect(job.estado).toBe('PENDIENTE');
+  await page.reload();
+  await expect(page.getByText('Ejecución ' + job.id, { exact: false })).toBeVisible();
+  await expect(page.getByText('Sincronización: PARCIAL', { exact: true })).toBeVisible({ timeout: 30000 });
+  await expect(page.getByText('No se pudieron actualizar los datos;', { exact: false }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Sincronizar indicadores', exact: true })).toBeEnabled();
 });

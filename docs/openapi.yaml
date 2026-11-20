@@ -1163,9 +1163,9 @@ paths:
               schema:
                 type: integer
               description: Segundos de espera.
-  /api/paises/sync-indicadores/:
-    post:
-      operationId: paises_sync_indicadores_create
+  /api/paises/sincronizaciones/:
+    get:
+      operationId: paises_sincronizaciones_latest
       tags:
       - paises
       security:
@@ -1175,7 +1175,68 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SyncReport'
+                $ref: '#/components/schemas/SyncJob'
+          description: ''
+        '204':
+          description: No response body
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
+  /api/paises/sincronizaciones/{job_id}/:
+    get:
+      operationId: paises_sincronizacion_retrieve
+      parameters:
+      - in: path
+        name: job_id
+        schema:
+          type: string
+          pattern: ^[0-9a-f-]{36}$
+        required: true
+      tags:
+      - paises
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncJob'
+          description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
+  /api/paises/sync-indicadores/:
+    post:
+      operationId: paises_sync_indicadores_create
+      tags:
+      - paises
+      security:
+      - jwtAuth: []
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncJob'
           description: ''
         '429':
           description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
@@ -2191,8 +2252,14 @@ components:
           type: integer
         paises_irpc_parcial:
           type: integer
+        paises_con_datos_no_verificados:
+          type: integer
+        paises_con_datos_rezagados:
+          type: integer
       required:
       - alertas_activas
+      - paises_con_datos_no_verificados
+      - paises_con_datos_rezagados
       - paises_con_irpc
       - paises_irpc_parcial
       - portafolios_usuario
@@ -2248,14 +2315,30 @@ components:
             message:
               type: string
             details: {}
+    EstadoEnum:
+      enum:
+      - PENDIENTE
+      - EJECUTANDO
+      - COMPLETADA
+      - PARCIAL
+      - FALLIDA
+      type: string
+      description: |-
+        * `PENDIENTE` - PENDIENTE
+        * `EJECUTANDO` - EJECUTANDO
+        * `COMPLETADA` - COMPLETADA
+        * `PARCIAL` - PARCIAL
+        * `FALLIDA` - FALLIDA
     FuenteEnum:
       enum:
       - WORLD_BANK
       - MANUAL
+      - DEMO_SINTETICO
       type: string
       description: |-
         * `WORLD_BANK` - World Bank
         * `MANUAL` - Manual
+        * `DEMO_SINTETICO` - Demostración sintética
     Indicador:
       type: object
       properties:
@@ -3085,6 +3168,10 @@ components:
         id:
           type: integer
           readOnly: true
+        calidad_datos:
+          type: object
+          additionalProperties: {}
+          readOnly: true
         pais_nombre:
           type: string
           readOnly: true
@@ -3126,6 +3213,7 @@ components:
         pais:
           type: string
       required:
+      - calidad_datos
       - id
       - indice_compuesto
       - nivel_riesgo
@@ -3141,6 +3229,10 @@ components:
       properties:
         id:
           type: integer
+          readOnly: true
+        calidad_datos:
+          type: object
+          additionalProperties: {}
           readOnly: true
         pais_nombre:
           type: string
@@ -3191,6 +3283,7 @@ components:
         pais:
           type: string
       required:
+      - calidad_datos
       - historico
       - historico_url
       - id
@@ -3223,24 +3316,39 @@ components:
         * `INFO` - Información
         * `WARNING` - Advertencia
         * `CRITICAL` - Crítica
-    SyncReport:
+    SyncJob:
       type: object
       properties:
-        paises_procesados:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        estado:
+          $ref: '#/components/schemas/EstadoEnum'
+        estado_url:
+          type: string
+          readOnly: true
+        creado:
+          type: string
+          format: date-time
+        iniciado:
+          type: string
+          format: date-time
+          nullable: true
+        terminado:
+          type: string
+          format: date-time
+          nullable: true
+        progreso: {}
+        resultado: {}
+        intentos:
           type: integer
-        actualizados:
-          type: integer
-        errores:
-          type: array
-          items:
-            type: object
-            additionalProperties: {}
-        riesgo:
-          type: object
-          additionalProperties: {}
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
       required:
-      - actualizados
-      - errores
+      - estado_url
+      - id
     TipoActivoEnum:
       enum:
       - RENTA_FIJA

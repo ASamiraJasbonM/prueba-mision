@@ -5,9 +5,11 @@ from .risk import recalculate
 logger = logging.getLogger('datapulse')
 
 
-def sync_and_recalculate(batch=False):
-    report = sync_indicators(batch=batch)
+def sync_and_recalculate(batch=False, progress=None):
+    report = sync_indicators(batch=batch, progress=progress)
     # Even partial failures must leave updated countries with a fresh risk calculation.
+    if progress:
+        progress({'fase': 'RECALCULANDO'})
     report['riesgo'] = recalculate()
     return report
 

@@ -7,7 +7,8 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 
 from .models import Pais, IndicadorEconomico, TipoCambio
 from .permissions import EsAdmin
-from .services.tasks import sync_and_recalculate
+from .services.sync_jobs import enqueue
+from .models import SyncJob
 from .idempotency import idempotent
 
 
@@ -62,6 +63,17 @@ class SyncReportSerializer(serializers.Serializer):
     riesgo = serializers.DictField(required=False)
 
 
+class SyncJobSerializer(serializers.ModelSerializer):
+    estado_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SyncJob
+        fields = ['id', 'estado', 'estado_url', 'creado', 'iniciado', 'terminado', 'progreso', 'resultado', 'intentos']
+
+    def get_estado_url(self, obj) -> str:
+        return f'/api/paises/sincronizaciones/{obj.pk}/'
+
+
 class PaisViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Pais.objects.select_related('moneda').all().order_by('codigo_iso')
     serializer_class = PaisSerializer
@@ -102,8 +114,23 @@ class PaisViewSet(viewsets.ReadOnlyModelViewSet):
         page = self.paginate_queryset(queryset)
         return self.get_paginated_response(CambioSerializer(page, many=True).data)
 
-    @extend_schema(request=None, responses=SyncReportSerializer)
+    @extend_schema(request=None, responses={202: SyncJobSerializer})
     @action(detail=False, methods=['post'], url_path='sync-indicadores', permission_classes=[EsAdmin])
     @idempotent
     def sync_indicadores(self, request):
-        return Response(sync_and_recalculate())
+        job = enqueue(request.user)
+        return Response(SyncJobSerializer(job).data, status=202,
+            headers={'Location': f'/api/paises/sincronizaciones/{job.pk}/'})
+
+    @extend_schema(operation_id='paises_sincronizacion_retrieve', responses=SyncJobSerializer)
+    @action(detail=False, methods=['get'], url_path=r'sincronizaciones/(?P<job_id>[0-9a-f-]{36})',
+            permission_classes=[EsAdmin], filter_backends=[])
+    def sincronizacion(self, request, job_id=None):
+        return Response(SyncJobSerializer(get_object_or_404(SyncJob, pk=job_id)).data)
+
+    @extend_schema(operation_id='paises_sincronizaciones_latest', responses={200: SyncJobSerializer, 204: None})
+    @action(detail=False, methods=['get'], url_path='sincronizaciones',
+            permission_classes=[EsAdmin], filter_backends=[])
+    def ultima_sincronizacion(self, request):
+        job = SyncJob.objects.first()
+        return Response(SyncJobSerializer(job).data) if job else Response(status=204)

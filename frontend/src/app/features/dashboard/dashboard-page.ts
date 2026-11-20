@@ -18,6 +18,8 @@ import { StatusStateComponent } from '../../shared/components/status-state.compo
 import { DataChart, ChartSeries } from '../../shared/components/data-chart';
 import { MapLatam } from './map-latam';
 import { chartNumber } from '../../shared/utils/decimal';
+import { RiskQualityComponent } from '../../shared/components/risk-quality';
+import { SyncStateService } from './sync-state.service';
 @Component({
   imports: [
     UiModule,
@@ -26,7 +28,9 @@ import { chartNumber } from '../../shared/utils/decimal';
     StatusStateComponent,
     DataChart,
     MapLatam,
+    RiskQualityComponent,
   ],
+  providers: [SyncStateService],
   template: `<div class="page-heading">
       <div>
         <p class="eyebrow">EL PULSO DE LATINOAMÉRICA</p>
@@ -59,6 +63,9 @@ import { chartNumber } from '../../shared/utils/decimal';
           ><a routerLink="/portafolios">Ver mis inversiones ↗</a>
         </article>
       </div>
+      <p class="notice">Calidad de las fuentes: {{ s.paises_con_datos_no_verificados ?? 'Sin información' }} países con
+        datos demo, manuales o procedencia incompleta; {{ s.paises_con_datos_rezagados ?? 'Sin información' }} con
+        datos rezagados o fechas insuficientes. Tener todos los campos no garantiza datos reales y recientes.</p>
       <div class="dashboard-grid">
         <section class="panel map-panel">
           <div class="section-title">
@@ -100,6 +107,7 @@ import { chartNumber } from '../../shared/utils/decimal';
                   @if (c.detalle_calculo.parcial) {
                     <small class="partial-label">Datos parciales</small>
                   }
+                  <app-risk-quality [quality]="c.calidad_datos" [compact]="true" />
                 </td></ng-container
               ><ng-container matColumnDef="indice"
                 ><th mat-header-cell *matHeaderCellDef mat-sort-header>IRPC</th>
@@ -182,13 +190,37 @@ import { chartNumber } from '../../shared/utils/decimal';
           </div>
           <button
             mat-stroked-button
-            [disabled]="syncing()"
+            [disabled]="syncing() || syncState.busy()"
             (click)="sync('paises/sync-indicadores/')"
           >
             Sincronizar indicadores</button
-          ><button mat-stroked-button [disabled]="syncing()" (click)="sync('riesgo/calcular/')">
+          ><button mat-stroked-button [disabled]="syncing() || syncState.busy()" (click)="sync('riesgo/calcular/')">
             Recalcular riesgo
           </button>
+          @if (syncState.job(); as job) {
+            <div role="status" class="notice">
+              <strong>Sincronización: {{ job.estado }}</strong>
+              <p>Ejecución {{ job.id }} · intento {{ job.intentos }}.</p>
+              @if (syncState.busy()) {
+                <p>{{ job.progreso.fase || 'Esperando worker' }} {{ job.progreso.indicador || '' }}.
+                  Puedes salir de esta pantalla; el trabajo continúa en el servidor.</p>
+              } @else {
+                <p>{{ job.resultado.actualizados ?? 0 }} registros actualizados ·
+                  {{ job.resultado.errores?.length ?? 0 }} errores de proveedor.</p>
+                @if (job.resultado.mensaje) { <p>{{ job.resultado.mensaje }}</p> }
+                @for (error of job.resultado.errores ?? []; track $index) {
+                  <p>{{ error.pais }} · {{ error.operacion }}: {{ error.mensaje }}</p>
+                }
+                @for (error of job.resultado.riesgo?.errores ?? []; track $index) {
+                  <p>{{ error.pais }}: no se pudo recalcular el riesgo ({{ error.code }}).</p>
+                }
+              }
+            </div>
+          }
+          @if (syncState.error()) {
+            <p role="alert">{{ syncState.error() }}</p>
+            <button mat-stroked-button (click)="syncState.resume()">Consultar estado</button>
+          }
           @if (report()) {
             <p role="status">{{ report() }}</p>
           }
@@ -200,6 +232,7 @@ import { chartNumber } from '../../shared/utils/decimal';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class DashboardPage {
+  readonly syncState = inject(SyncStateService);
   private api = inject(ApiBaseService);
   readonly auth = inject(AuthService);
   readonly summary = signal<DashboardSummary | null>(null);
@@ -222,6 +255,10 @@ export class DashboardPage {
   });
   constructor() {
     this.load();
+    this.syncState.finished.pipe(takeUntilDestroyed(inject(DestroyRef))).subscribe(() => {
+      this.load(); this.refreshTrends();
+    });
+    if (this.auth.user?.rol === 'ADMIN') this.syncState.resume();
     this.filters.valueChanges
       .pipe(
         startWith(this.filters.getRawValue()),
@@ -310,6 +347,7 @@ export class DashboardPage {
     );
   }
   sync(path: string): void {
+    if (path === 'paises/sync-indicadores/') { this.syncState.start(); return; }
     this.syncing.set(true);
     this.report.set('Actualizando…');
     this.api

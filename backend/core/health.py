@@ -6,6 +6,10 @@ from rest_framework.response import Response
 from django.core.cache import cache
 from django.db import connection, DatabaseError
 from core.api import ErrorResponseSerializer
+from datetime import timedelta
+from django.conf import settings
+from django.utils import timezone
+from core.models import SyncWorkerPulse
 
 
 class HealthSerializer(serializers.Serializer):
@@ -36,6 +40,9 @@ def ready(request):
             cursor.execute('SELECT 1')
             cursor.fetchone()
         cache.get('__readiness__')
+        if settings.SYNC_WORKER_REQUIRED and not SyncWorkerPulse.objects.filter(
+                pk=1, actualizado__gte=timezone.now()-timedelta(seconds=90)).exists():
+            raise DatabaseError('Worker heartbeat unavailable')
     except (DatabaseError, OSError):
         return Response({'error': {'code': 'not_ready',
             'message': 'Servicio temporalmente no disponible.', 'details': {}}},

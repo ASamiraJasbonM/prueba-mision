@@ -10,6 +10,7 @@ from .models import Pais, Portafolio, IndicadorEconomico
 from .risk_api import latest_risks, user_alerts
 from .services.numbers import quantize
 from .services.sync import INDICATORS
+from .services.risk_quality import risk_quality
 
 COLORS = {'BAJO': '#22c55e', 'MODERADO': '#eab308', 'ALTO': '#f97316', 'CRITICO': '#ef4444'}
 
@@ -21,6 +22,8 @@ class DashboardSummarySerializer(serializers.Serializer):
     promedio_irpc_region = serializers.DecimalField(max_digits=5, decimal_places=2, allow_null=True)
     paises_con_irpc = serializers.IntegerField()
     paises_irpc_parcial = serializers.IntegerField()
+    paises_con_datos_no_verificados = serializers.IntegerField()
+    paises_con_datos_rezagados = serializers.IntegerField()
 
 
 class MapSerializer(serializers.Serializer):
@@ -56,12 +59,15 @@ class DashboardViewSet(viewsets.GenericViewSet):
     @action(detail=False, methods=['get'])
     def resumen(self, request):
         risks = list(latest_risks())
+        qualities = [risk_quality(risk) for risk in risks]
         mean = quantize(sum((risk.indice_compuesto for risk in risks), Decimal('0')) / len(risks)) if risks else None
         data = {'total_paises': Pais.objects.count(),
             'alertas_activas': user_alerts(request.user).filter(leida_usuario=False).count(),
             'portafolios_usuario': Portafolio.objects.filter(usuario=request.user).count(),
             'promedio_irpc_region': mean, 'paises_con_irpc': len(risks),
-            'paises_irpc_parcial': sum(bool(risk.detalle_calculo.get('parcial')) for risk in risks)}
+            'paises_irpc_parcial': sum(bool(risk.detalle_calculo.get('parcial')) for risk in risks),
+            'paises_con_datos_no_verificados': sum(not quality['solo_fuentes_externas'] for quality in qualities),
+            'paises_con_datos_rezagados': sum(quality['datos_rezagados'] for quality in qualities)}
         return Response(DashboardSummarySerializer(data).data)
 
     @extend_schema(responses=MapSerializer(many=True))

@@ -8,6 +8,7 @@ from pathlib import Path
 import secrets
 import signal
 import sys
+from threading import Event, Thread
 from tempfile import TemporaryDirectory
 from socketserver import ThreadingMixIn
 from urllib.parse import unquote
@@ -34,11 +35,13 @@ def main():
             'CACHE_SHARED': 'False',
             'CAPTCHA_ENFORCED': 'False', 'API_DOCS_ENABLED': 'False',
             'ALLOWED_HOSTS': '127.0.0.1,localhost', 'CORS_ALLOWED_ORIGINS': '', 'JWT_SIGNING_KEY': '',
+            'WORLD_BANK_URL': 'http://127.0.0.1:18120/provider/world-bank',
         })
         sys.path.insert(0, str(ROOT / 'backend'))
         import django
         django.setup()
         from django.conf import settings
+        settings.DATABASES['default'].setdefault('OPTIONS', {})['transaction_mode'] = 'IMMEDIATE'
         # High limits only in this disposable fixture; production limits and
         # CAPTCHA/MFA behavior have their own unit/integration regression tests.
         settings.REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
@@ -54,6 +57,20 @@ def main():
 
         def application(environ, start_response):
             path = environ.get('PATH_INFO', '/')
+            if path.startswith('/provider/world-bank/country/'):
+                # Only the upstream provider is controlled; SPA/API/queue/worker are real.
+                parts = path.split('/')
+                code, indicator = parts[-3], parts[-1]
+                if indicator == 'GC.DOD.TOTL.GD.ZS':
+                    payload = {'error': 'Controlled provider failure'}
+                else:
+                    from datetime import datetime, timezone
+                    year = datetime.now(timezone.utc).year-1
+                    payload = [{'pages': 1}, [{'country': {'id': country}, 'date': str(annual), 'value': 4}
+                        for country in code.split(';') for annual in range(year-4, year+1)]]
+                body = json.dumps(payload).encode()
+                start_response('200 OK', [('Content-Type', 'application/json'), ('Content-Length', str(len(body)))])
+                return [body]
             if path.startswith(('/api/', '/admin/')):
                 return django_app(environ, start_response)
             target = (FRONTEND / unquote(path).lstrip('/')).resolve()
@@ -83,12 +100,29 @@ def main():
             raise KeyboardInterrupt
 
         signal.signal(signal.SIGTERM, stop)
+        worker_stop = Event()
+        def work():
+            from core.services.sync_jobs import process_next_job
+            from core.models import SyncJob
+            from django.db import close_old_connections, DatabaseError
+            while not worker_stop.wait(.2):
+                close_old_connections()
+                try:
+                    if SyncJob.objects.filter(estado__in=['PENDIENTE', 'EJECUTANDO']).exists():
+                        process_next_job()
+                except DatabaseError:
+                    close_old_connections()
+            connections.close_all()
+        worker = Thread(target=work, daemon=True)
+        worker.start()
         try:
             with make_server('127.0.0.1', 18120, application, Server, QuietHandler) as server:
                 server.serve_forever()
         except KeyboardInterrupt:
             pass
         finally:
+            worker_stop.set()
+            worker.join(timeout=10)
             connections.close_all()
 
 

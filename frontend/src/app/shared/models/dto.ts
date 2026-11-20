@@ -57,6 +57,7 @@ export interface ExchangeRate {
   fuente: string;
 }
 export interface Risk {
+  calidad_datos?: RiskQuality;
   id: number;
   pais: string;
   pais_nombre: string;
@@ -101,6 +102,8 @@ export interface MapCountry {
   parcial: boolean;
 }
 export interface DashboardSummary {
+  paises_con_datos_no_verificados?: number;
+  paises_con_datos_rezagados?: number;
   total_paises: number;
   alertas_activas: number;
   portafolios_usuario: number;
@@ -191,7 +194,34 @@ export interface SyncReport {
   actualizados: number;
   paises_procesados?: number;
   errores: { pais: string; operacion: string; mensaje: string }[];
-  riesgo?: { calculados: number; existentes: number };
+  riesgo?: { calculados: number; existentes: number; errores?: { pais: string; code: string }[] };
+}
+export interface RiskQuality {
+  indicadores_externos: number;
+  indicadores_manuales: number;
+  indicadores_sinteticos: number;
+  indicadores_sin_origen: number;
+  tasas_externas: number;
+  tasas_sinteticas: number;
+  tasas_total: number;
+  indicadores_rezagados: string[];
+  indicadores_sin_fecha?: string[];
+  dias_desde_tasa: number | null;
+  dias_desde_calculo: number;
+  solo_fuentes_externas: boolean;
+  datos_rezagados: boolean;
+  requiere_revision: boolean;
+}
+export interface SyncJob {
+  id: string;
+  estado: 'PENDIENTE' | 'EJECUTANDO' | 'COMPLETADA' | 'PARCIAL' | 'FALLIDA';
+  estado_url: string;
+  progreso: { fase?: string; indicador?: string; paises?: string[]; actualizados?: number };
+  resultado: Partial<SyncReport> & { mensaje?: string };
+  creado: string;
+  iniciado: string | null;
+  terminado: string | null;
+  intentos: number;
 }
 export const INDICATORS: { value: IndicatorType; label: string }[] = [
   { value: 'PIB', label: 'PIB' },

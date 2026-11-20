@@ -73,7 +73,7 @@ Evidencia por etapa en `docs/ETAPAS.md`. El prompt backend del usuario tiene pri
 
 La revisión posterior está en [Cierre de observaciones P1–P9](docs/CIERRE_OBSERVACIONES.md), con commits, decisiones y [salida completa de los cinco comandos finales](docs/observaciones/P9.md). Los resultados históricos 0–10 se conservan como evidencia de la evolución; el contrato vigente incluye las correcciones posteriores.
 
-Alcance de este encargo: backend completo y frontend Angular (ver `frontend/README.md`). El PDF asigna 35% a la parte técnica de frontend y 10% al video dentro de los entregables (son esquemas de ponderación distintos). La implementación abarca la parte técnica backend descrita como 40% y los componentes de backend del bloque de integración/tareas descrito como 25%; no se afirma haber obtenido esos puntajes ni cumplir el 100% del PDF. El despliegue público sigue pendiente: `compose.yaml` prepara PostgreSQL local y frontend Docker, pero no proporciona URL pública, HTTPS ni video. La validación real en PostgreSQL está documentada abajo (61 pruebas, sin skips); la validación contra proveedores se declara pendiente.
+La entrega vigente incluye backend, frontend y despliegues HTTPS en Render/Pages. Las ejecuciones CI del commit evaluado son la referencia de pruebas y publicación; los informes por etapa conservan resultados históricos. World Bank y ExchangeRate-API tienen sincronizaciones reales acreditadas; REST Countries sigue requiriendo validación independiente. No se afirma cumplimiento total del PDF.
 
 > Render Free suspende el servicio web por inactividad y el primer acceso puede tardar. La base PostgreSQL gratuita `datapulse-db` expira el 18 de diciembre de 2026, según el panel de Render; conservar un backup externo. El proyecto también puede levantarse en local con `docker compose up`.
 
@@ -129,7 +129,17 @@ El riesgo ponderado usa solo montos con IRPC disponible y devuelve el monto cubi
 
 ## Operaciones, auditoría y tareas
 
-Los comandos son procesos independientes aptos para cron/Task Scheduler; no requieren Celery/Redis. La sincronización bajo demanda por POST ADMIN espera el resultado; no se anuncia como un job asíncrono. La programación se configura fuera de Django, no se instala automáticamente en este equipo.
+Los comandos son procesos independientes aptos para cron/Task Scheduler; no requieren Celery/Redis. POST ADMIN `/api/paises/sync-indicadores/` encola un trabajo persistente y devuelve HTTP 202 con ID y URL de estado. No consulta proveedores dentro del request. Angular consulta progreso/resultado cada tres segundos y recupera la última ejecución al volver al dashboard.
+
+En desarrollo, junto a `runserver`, ejecutar en otra terminal:
+
+```powershell
+uv run --frozen python backend/manage.py procesar_sincronizaciones
+```
+
+Render y Docker usan `scripts/serve_backend.py`: supervisa Gunicorn y el worker; si uno termina, detiene el otro para permitir el reinicio de la plataforma. Readiness exige heartbeat reciente del worker. La cola deduplica trabajos activos, recupera leases de 90 segundos y limita a tres intentos tras interrupciones. Los resultados pueden ser COMPLETADA, PARCIAL o FALLIDA; se conservan los datos ya confirmados.
+
+El IRPC expone `calidad_datos` desde el snapshot de sus entradas, sin modificar scores ni consultar por cada fila. Dashboard, ranking y país distinguen procedencia, completitud y vigencia: más de dos años para indicadores, dos días para la última tasa o un día para el cálculo generan advertencia. Son umbrales de presentación, no garantías del proveedor. Un año/fecha ausente también requiere revisión. Nuevos seeds usan `DEMO_SINTETICO`; los MANUAL antiguos siguen como manuales/no verificados, sin inventar su procedencia. La cobertura externa no convierte un cálculo parcial en completo.
 
 ```powershell
 uv run --frozen python backend/manage.py sync_indicadores

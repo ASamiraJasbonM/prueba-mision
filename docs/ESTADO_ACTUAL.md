@@ -1,6 +1,6 @@
 # Estado vigente de DataPulse Latam
 
-Fecha de revisión: 19 de noviembre de 2026 (America/Bogota). La rama de referencia
+Fecha de revisión: 20 de noviembre de 2026 (America/Bogota). La rama de referencia
 y predeterminada es `main`. README, API, ARQUITECTURA, DEPLOYMENT y E2E describen la
 entrega actual. Los informes de etapas, observaciones y validaciones fechadas
 conservan evidencia del momento en que se ejecutaron: sus límites y conteos no
@@ -30,8 +30,15 @@ segundos. Estos tiempos incluyen preparación y verificaciones; no son un SLA.
 La API oficial de World Bank puede rechazar consultas agrupadas: se conserva el
 fallback por país sin inventar datos ni ocultar fallos finales. Los informes de cada
 ejecución distinguen datos actualizados, sin cambios y errores. La actualización
-diaria usa procesos externos al servidor HTTP. La acción ADMIN interactiva conserva
-su respuesta síncrona; ante proveedores lentos puede superar el timeout del worker.
+diaria usa procesos externos al servidor HTTP. La acción ADMIN interactiva devuelve
+202 y encola en PostgreSQL; un worker supervisado realiza las llamadas externas,
+publica progreso/resultado y recupera trabajos interrumpidos. El dashboard recupera
+su ejecución al navegar o recargar. Readiness comprueba también heartbeat del worker.
+
+Dashboard, ranking y país muestran calidad de las entradas del IRPC: procedencia
+externa/manual/sintética, antigüedad y ausencias de fecha. Un cálculo con todos los
+campos puede seguir requiriendo revisión; su puntuación no se altera. Los MANUAL
+antiguos se conservan como no verificados y los nuevos seeds se etiquetan sintéticos.
 
 REST Countries tiene cliente y pruebas controladas, pero aún requiere clave y una
 validación real independiente. No se presenta como comprobada. El seed contiene

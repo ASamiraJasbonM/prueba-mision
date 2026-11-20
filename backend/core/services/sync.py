@@ -49,7 +49,7 @@ def persist_indicator(pais, tipo, year, value, unit):
     return True
 
 
-def _fetch_indicator_group(group, by_code, tipo, code, unit, year, report, changed_rows, batch):
+def _fetch_indicator_group(group, by_code, tipo, code, unit, year, report, changed_rows, batch, progress=None):
     # Fetch one indicator for a group of countries and persist the rows. In
     # batch mode a request-level failure returns False without logging errors
     # so the caller can retry each country individually; single-country calls
@@ -58,8 +58,14 @@ def _fetch_indicator_group(group, by_code, tipo, code, unit, year, report, chang
         page = 1
         while True:
             codes = ';'.join(by_code)
+            if progress:
+                progress({'fase': 'INDICADORES', 'indicador': tipo, 'paises': list(by_code),
+                    'actualizados': report['actualizados']})
             payload = get_json(f'{settings.WORLD_BANK_URL}/country/{codes}/indicator/{code}',
                 params={'date': f'{year-4}:{year}', 'format': 'json', 'per_page': 100, 'page': page})
+            if progress:
+                progress({'fase': 'GUARDANDO', 'indicador': tipo, 'paises': list(by_code),
+                    'actualizados': report['actualizados']})
             if not isinstance(payload, list) or len(payload) != 2 or not isinstance(payload[0], dict):
                 raise ValueError('Respuesta inválida de World Bank.')
             for row in payload[1] or []:
@@ -81,6 +87,7 @@ def _fetch_indicator_group(group, by_code, tipo, code, unit, year, report, chang
             if page >= min(int(payload[0].get('pages', 1)), 10):
                 break
             page += 1
+        report['consultas_exitosas'] += 1
         return True
     except SYNC_ERRORS as exc:
         if not batch:
@@ -89,8 +96,8 @@ def _fetch_indicator_group(group, by_code, tipo, code, unit, year, report, chang
         return False
 
 
-def sync_indicators(batch=False):
-    report = {'paises_procesados': 0, 'actualizados': 0, 'errores': [], 'paises': []}
+def sync_indicators(batch=False, progress=None):
+    report = {'paises_procesados': 0, 'actualizados': 0, 'errores': [], 'paises': [], 'consultas_exitosas': 0}
     year = timezone.now().year - 1
     logger.info('sync_indicadores_inicio')
     countries = list(Pais.objects.all())
@@ -102,10 +109,10 @@ def sync_indicators(batch=False):
         by_code = {country.pk: country for country in group}
         changed_rows = {country.pk: [] for country in group}
         for tipo, (code, unit) in INDICATORS.items():
-            ok = _fetch_indicator_group(group, by_code, tipo, code, unit, year, report, changed_rows, batch)
+            ok = _fetch_indicator_group(group, by_code, tipo, code, unit, year, report, changed_rows, batch, progress)
             if not ok and batch:
                 for country in group:
-                    _fetch_indicator_group([country], {country.pk: country}, tipo, code, unit, year, report, changed_rows, False)
+                    _fetch_indicator_group([country], {country.pk: country}, tipo, code, unit, year, report, changed_rows, False, progress)
         for pais in group:
             report['paises_procesados'] += 1
             report['paises'].append(pais.pk)

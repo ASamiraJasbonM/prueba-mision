@@ -20,7 +20,16 @@
 
 Render Free no ofrece Shell ni pre-deploy commands. El comando de arranque aplica
 `migrate --noinput` antes de iniciar Gunicorn y falla si las migraciones fallan.
-El CMD normal de Docker sigue intacto; el override solo se usa en Render.
+Render y el CMD de Docker ejecutan `scripts/serve_backend.py`, supervisor de
+Gunicorn y `procesar_sincronizaciones`. Compose aplica migraciones antes del mismo
+supervisor. Ambos procesos usan la base configurada y las claves existentes; no se
+añaden broker ni secretos. Si uno termina, el supervisor detiene ambos y sale con
+error para permitir reinicio por la plataforma. La cola sobrevive en PostgreSQL.
+El supervisor fija SYNC_WORKER_REQUIRED=True: readiness exige heartbeat de menos
+de 90 segundos. No publicar una versión cuya migración 0008 no haya terminado.
+Antes de publicar Pages, su job espera el mismo SHA saludable en Render. Es una
+comprobación de lectura, sin invocar el hook ni desplegar de nuevo el backend; evita
+publicar la UI de trabajos mientras la API todavía conserva el contrato anterior.
 El adaptador WSGI de infraestructura añade `X-Deployment-Commit` únicamente al
 healthcheck y readiness, usando `RENDER_GIT_COMMIT` de la plataforma. El job fija
 el SHA en el hook y espera HTTP 200 con ese mismo SHA en ambas rutas; una versión

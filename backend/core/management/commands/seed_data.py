@@ -56,7 +56,7 @@ class Command(BaseCommand):
                 }
                 for kind, value in values.items():
                     IndicadorEconomico.objects.get_or_create(pais=country, tipo=kind, anio=year,
-                        defaults={'valor': value, 'unidad': INDICATORS[kind][1], 'fuente': 'MANUAL'})
+                        defaults={'valor': value, 'unidad': INDICATORS[kind][1], 'fuente': 'DEMO_SINTETICO'})
             # 31 observations give 30 daily variations, meeting the 30-day minimum.
             for day in range(31):
                 business_date = today-timedelta(days=30-day)

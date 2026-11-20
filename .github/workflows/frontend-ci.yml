@@ -161,7 +161,7 @@ jobs:
     needs: [lint-and-check, test, e2e, build, docker-build]
     if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: .
@@ -185,6 +185,8 @@ jobs:
           test "$(jq -r .commit pages-artifact/deployment.json)" = "$GITHUB_SHA"
           test -s pages-artifact/index.html
           test -s pages-artifact/_headers
+      - name: Wait for the matching healthy backend and queue worker
+        run: python scripts/deploy_pipeline.py wait-render
       - name: Publish the validated artifact to Cloudflare Pages
         uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd
         with:

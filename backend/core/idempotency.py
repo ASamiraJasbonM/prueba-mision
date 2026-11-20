@@ -27,9 +27,10 @@ def idempotent(function):
             if existing:
                 if existing.body_hash != digest:
                     raise Conflict('Idempotency-Key ya fue usada con otro cuerpo.')
-                return Response(existing.response)
+                status = 202 if existing.response.get('estado_url') else 200
+                return Response(existing.response, status=status)
             result = function(view, request, *args, **kwargs)
-            if result.status_code == 200:
+            if result.status_code in (200, 202):
                 IdempotentRequest.objects.update_or_create(**lookup, defaults={
                     'body_hash': digest, 'response': result.data, 'expires': timezone.now() + timedelta(minutes=5)})
             return result

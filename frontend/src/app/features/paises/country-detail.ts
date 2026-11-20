@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { RiskQualityComponent } from '../../shared/components/risk-quality';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
 import { FormBuilder } from '@angular/forms';
@@ -22,7 +23,7 @@ import { utcDaysAgo, utcToday } from '../../shared/utils/dates';
 import { CountryFlag } from '../../shared/components/country-flag';
 @Component({
   imports: [
-    UiModule, DecimalDisplayPipe, RiskBadgeComponent, StatusStateComponent, DataChart, CountryFlag,
+    UiModule, DecimalDisplayPipe, RiskBadgeComponent, StatusStateComponent, DataChart, CountryFlag, RiskQualityComponent,
   ],
   template: `<a class="back-link" routerLink="/paises">← Explorar países</a>
     @if (country(); as c) {
@@ -141,6 +142,7 @@ import { CountryFlag } from '../../shared/components/country-flag';
               cobertura antes de comparar.
             </p>
           }
+          <app-risk-quality [quality]="r.calidad_datos" />
           <details>
             <summary>Fuentes y factores del cálculo</summary>
             <div class="table-scroll">

@@ -17,7 +17,7 @@ está fuera de `.venv`, definir E2E_PYTHON con su ruta antes de ejecutar las pru
 
 ## Qué se prueba
 
-Seis casos: tres flujos en Chromium a 1920×1080 y a 768×1024:
+Ocho casos: cuatro flujos en Chromium a 1920×1080 y a 768×1024:
 
 1. Login ANALISTA, navegación, alta de portafolio, monto inválido bloqueado,
    alta/edición de posición con decimales exactos, PDF real y borrado confirmado.
@@ -25,6 +25,9 @@ Seis casos: tres flujos en Chromium a 1920×1080 y a 768×1024:
    vigente y reenvío explícito después de revisar. No hay reintento ciego.
 3. VIEWER sin controles de escritura, ruta protegida y 403 del servidor; detalle
    de país con bandera local cargada, gráficos y ausencia de desborde horizontal.
+4. ADMIN encola con 202, recarga la página, recupera la misma ejecución y consulta
+   un resultado PARCIAL con errores explícitos del proveedor. País muestra calidad
+   de datos demo independientemente de completitud.
 
 No hay mocks de respuestas API: navega la SPA compilada de producción y llama a
 Django real. La simulación de concurrencia realiza una segunda escritura auténtica
@@ -37,6 +40,12 @@ aleatorias y SQLite temporal, aplica migraciones y seed, y sirve estáticos y AP
 en el mismo origen con la CSP de producción. No toma conexión ni claves de .env/Render,
 no consulta proveedores, no permite un BASE_URL remoto y no reutiliza un servidor
 existente. Las instancias normales 4200/8000 y la base demo no se tocan.
+
+La fixture incluye worker real en un hilo y un proveedor World Bank HTTP local
+controlado (incluye un indicador fallido). Las respuestas de la API de negocio no
+se simulan y no se consulta World Bank real. SQLite usa transacciones IMMEDIATE para
+serializar escrituras de esta fixture; concurrencia de cola y cuotas se verifica
+por separado contra PostgreSQL. El runtime productivo usa procesos separados.
 
 Solo la fixture efímera usa caché en memoria, desactiva CAPTCHA y amplía throttling para ejecutar el
 recorrido de negocio sin retos humanos ni cuotas entre casos. Los controles de

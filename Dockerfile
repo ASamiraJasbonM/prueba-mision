@@ -40,6 +40,7 @@ COPY --chown=appuser:appuser backend/ ./backend/
 COPY --chown=appuser:appuser scripts/check_numeric_policy.py ./scripts/check_numeric_policy.py
 COPY --chown=appuser:appuser scripts/render-start.sh ./scripts/render-start.sh
 COPY --chown=appuser:appuser scripts/render_wsgi.py ./scripts/render_wsgi.py
+COPY --chown=appuser:appuser scripts/serve_backend.py ./scripts/serve_backend.py
 
 USER appuser
 EXPOSE 8000
@@ -48,4 +49,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD python -c "import os,urllib.request; h=os.environ.get('ALLOWED_HOSTS','localhost').split(',')[0].strip().lstrip('.'); h='localhost' if h=='*' else h; r=urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8000/api/ready/', headers={'Host':h,'X-Forwarded-Proto':'https'}), timeout=3); assert r.status == 200"
 
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "60"]
+CMD ["python", "scripts/serve_backend.py"]
