@@ -95,7 +95,7 @@ import { utcToday } from '../../shared/utils/dates';
           </div>
           @if (p.metricas.posiciones_activas) {
             <app-data-chart
-              kind="doughnut"
+              kind="pie"
               yLabel="USD"
               [labels]="countryLabels()"
               [series]="countrySeries()"

@@ -1,5 +1,9 @@
 # Registro de ejecución por etapas
 
+> Bitácora histórica: cada etapa conserva su código, decisiones y salida original.
+> El inventario vigente está en [ESTADO_ACTUAL](ESTADO_ACTUAL.md); este registro
+> no reemplaza los workflows ni los resultados del commit actual.
+
 ## Decisiones iniciales
 
 - Etapa 0 necesita un proyecto Django importable: se crea configuración base aquí; etapa 1 añade usuario custom antes de ejecutar cualquier migración.

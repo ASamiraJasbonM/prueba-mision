@@ -1,8 +1,11 @@
 # Integración segura (U2; monitoreo U1 y recuperación U3)
 
+Estado de despliegue y comprobaciones vigentes: [ESTADO_ACTUAL](ESTADO_ACTUAL.md).
+Los comandos siguientes sirven como checklist reproducible para nuevos entornos.
+
 ```mermaid
 flowchart LR
-    B[Navegador] -->|HTTPS y CSP| F[Frontend nginx]
+    B[Navegador] -->|HTTPS y CSP| F[Cloudflare Pages / nginx local]
     F -->|Red privada o HTTPS verificado / JWT / If-Match| A[Django API]
     B -. API en otro origen / HTTPS / CORS explícito .-> A
     A -->|Rol mínimo / TLS en producción| P[(PostgreSQL)]
@@ -43,9 +46,9 @@ segundo POST para ADMIN enrolado, con TOTP o recovery en code. Se verificó cont
 backend real aislado, incluido logout entre pestañas, sin violaciones CSP. La demo
 habitual conserva seed sin MFA y configuración local; no se desactivan controles
 del backend para hacer funcionar la interfaz. TODO página opcional de enrolamiento
-MFA, TLS/domino real y alternativa accesible para CAPTCHA. Ver
+MFA y alternativa accesible para CAPTCHA. HTTPS está publicado en Render/Pages. Ver
 [validación frontend](VALIDACION_SEGURIDAD_FRONTEND.md).
 
 Las pruebas backend verifican cabeceras/CORS existentes y permisos; el checklist
-HTTPS depende de los dominios/certificados reales, ausentes en este entorno.
+HTTPS debe repetirse al cambiar los dominios/certificados publicados.
 [SEGURIDAD §9](SEGURIDAD.md#9-integración-u2), [SIEM](SIEM.md), [RESTORE](RESTORE.md).

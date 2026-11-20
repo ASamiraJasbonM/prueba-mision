@@ -1,5 +1,9 @@
 # DataPulse Latam · Frontend
 
+Estado vigente: [ESTADO_ACTUAL](../docs/ESTADO_ACTUAL.md),
+[arquitectura](../docs/ARQUITECTURA.md) y [pruebas E2E](../docs/E2E.md).
+Los bloques fechados conservan los resultados de sus revisiones originales.
+
 SPA Angular 20, Angular Material, TypeScript estricto, componentes standalone con OnPush y rutas lazy. Interfaz clara, navegación verde oscuro, tipografía local DM Sans / Source Serif 4. El backend se consume sin modificar su código, migraciones, pruebas ni configuración.
 
 ## Ejecutar
@@ -23,7 +27,7 @@ Usuarios demo (requieren los datos semilla del backend): `admin@datapulse.com`, 
 3. **Países:** búsqueda/región, paginación, seis indicadores con fuentes/años, históricos, cambio USD por unidad local de los últimos 30 días UTC, scores e histórico completo de riesgo, faltantes y fuentes del cálculo.
 4. **Portafolios:** propios, públicos y vista administrativa; creación/edición con nombre asíncrono; posiciones con autocompletado de país, importes y reglas exactas, edición/cierre, resumen del servidor, distribución por país/activo y exportación PDF. Confirmación de eliminación/cierre. Posiciones cerradas permanecen de consulta.
 5. **Alertas:** filtros, paginación, lectura individual/todas y polling cada 30 segundos del badge y del listado abierto. El backend conserva lectura por usuario, incluidas alertas globales.
-6. **Verificación:** Karma/Jasmine para autenticación, guards, interceptores, paginación, polling, concurrencia, importes y formulario de posición; build de producción y comprobación visual con API local. No se añadió una suite E2E.
+6. **Verificación:** Karma/Jasmine para autenticación, guards, interceptores, paginación, polling, concurrencia, importes y formulario de posición; build de producción y Playwright contra Django real con SQLite efímera en desktop y tablet. E2E bloquea el despliegue de Pages si falla.
 
 ## Contrato y decisiones
 
@@ -55,7 +59,10 @@ npm run test:ci
 
 La auditoría de producción del 17/11/2026 reporta **0 vulnerabilidades**. La cadena de herramientas de desarrollo (Angular CLI/build y Karma) presenta 33 avisos transitivos: 14 moderados y 19 altos, principalmente glob/minimatch/picomatch. `npm audit fix` no ofrece una corrección compatible completa; no se aplicó `--force`, que propone bajar Angular CLI a 16 o cambiar Karma. Mantener el servidor de desarrollo en loopback y revisar actualizaciones compatibles antes de exponer herramientas de desarrollo. Estos paquetes no forman parte del JavaScript de producción.
 
-No se añadieron secretos ni servicios externos de mapas. El despliegue backend y las pruebas E2E quedan fuera del alcance solicitado.
+No se añadieron secretos ni servicios externos de mapas. Las banderas de los diez
+países se sirven localmente con licencia MIT de flag-icons 7.6.0; no se amplía CSP
+para cargar imágenes de proveedores. El gráfico por país es pie y el de activos donut.
+El despliegue backend y las pruebas E2E forman parte de la entrega integrada actual.
 
 ## Resultado local de verificación
 
@@ -114,7 +121,12 @@ La [política de seguridad](../docs/SEGURIDAD_FRONTEND.md) detalla la CSP y cabe
 
 ### Pipeline
 
-`.github/workflows/frontend-ci.yml` tiene cuatro jobs: lint-and-check, test, build y docker-build. Usa setup-node v4 con Node 22.12.0 (mínimo soportado de esta rama), caché npm por el lockfile y `npm ci`. No cambia package.json ni incorpora uv. No existe un target ESLint: la comprobación estática utiliza los proyectos TypeScript estrictos existentes y la sintaxis de los scripts de infraestructura; no se simula un `ng lint` inexistente.
+`.github/workflows/frontend-ci.yml` tiene seis jobs: lint-and-check, test, e2e,
+build, docker-build y deploy-cloudflare. Usa Node 22.12.0, caché npm por lockfile
+y `npm ci`. El job E2E prepara Python 3.12 con uv 0.13.9 para levantar Django
+aislado; las claves se generan para esa ejecución y no son secretos productivos.
+La comprobación estática incluye app, spec, E2E y scripts de infraestructura.
+No existe un target ESLint y no se anuncia como ejecutado.
 
 Se activa en push y PR hacia `feat/backend-datapulse` (rama predeterminada actual)
 o `main`, cuando cambian frontend, su workflow, Compose, su política de seguridad
@@ -124,7 +136,10 @@ destino, no a la rama de origen.
 
 El job de imagen usa Buildx y caché gha, `push: false`, prueba HTTP contra un upstream efímero y escanea el runtime con Trivy 0.76.2, acción fijada al commit de v0.36.0. HIGH/CRITICAL hacen fallar el job, sin ignorar los no corregidos. Se conserva el reporte JSON como artifact. Solo hay permiso contents:read; no se publica nada en GHCR ni se solicitan credenciales de despliegue.
 
-Los scripts `docker/upstream-fixture.mjs` y `docker/smoke-test.mjs` son verificaciones de infraestructura: rutas SPA, cabeceras, gzip, cache, 404, JWT/If-Match, cuerpo decimal, DELETE y PDF. La fixture queda fuera de la imagen final. No se añadió una suite E2E de Angular.
+Los scripts `docker/upstream-fixture.mjs` y `docker/smoke-test.mjs` verifican
+infraestructura: rutas SPA, cabeceras, gzip, caché, 404, JWT/If-Match, cuerpos,
+DELETE y PDF. Complementan la suite Playwright contra Django real. Ninguna fixture
+ni dependencia de navegador de pruebas forma parte del runtime nginx final.
 
 ### Validación local de la entrega — 18/11/2026
 

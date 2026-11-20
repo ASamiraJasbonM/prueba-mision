@@ -30,22 +30,28 @@ describe('DataChart', () => {
     fixture.destroy();
     expect(Chart.getChart(canvas)).toBeUndefined();
   });
-  it('exposes the selected distribution category and amount without inventing Cartesian axes', async () => {
-    await TestBed.configureTestingModule({ imports: [DataChart] }).compileComponents();
-    const fixture = TestBed.createComponent(DataChart);
-    fixture.componentRef.setInput('kind', 'doughnut');
-    fixture.componentRef.setInput('labels', ['CO', 'BR']);
-    fixture.componentRef.setInput('series', [{ label: 'Inversión', data: [1234.56, 2000] }]);
-    fixture.componentRef.setInput('xLabel', 'País');
-    fixture.componentRef.setInput('yLabel', 'USD');
-    fixture.detectChanges();
-    fixture.nativeElement
-      .querySelector('canvas')
-      .dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
-    fixture.detectChanges();
-    const text = fixture.nativeElement.querySelector('.chart-readout').textContent;
-    expect(text).toContain('País: CO');
-    expect(text).toContain('1.234,56');
-    fixture.destroy();
-  });
+  for (const kind of ['pie', 'doughnut'] as const) {
+    it(`exposes the selected ${kind} category and amount without inventing Cartesian axes`, async () => {
+      await TestBed.configureTestingModule({ imports: [DataChart] }).compileComponents();
+      const fixture = TestBed.createComponent(DataChart);
+      fixture.componentRef.setInput('kind', kind);
+      fixture.componentRef.setInput('labels', ['CO', 'BR']);
+      fixture.componentRef.setInput('series', [{ label: 'Inversión', data: [1234.56, 2000] }]);
+      fixture.componentRef.setInput('xLabel', 'País');
+      fixture.componentRef.setInput('yLabel', 'USD');
+      fixture.detectChanges();
+      fixture.nativeElement
+        .querySelector('canvas')
+        .dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+      fixture.detectChanges();
+      const text = fixture.nativeElement.querySelector('.chart-readout').textContent;
+      expect(text).toContain('País: CO');
+      expect(text).toContain('1.234,56');
+      const chart = Chart.getChart(fixture.nativeElement.querySelector('canvas'))!;
+      expect('type' in chart.config ? chart.config.type : undefined).toBe(kind);
+      expect(chart.scales['x']).toBeUndefined();
+      expect(chart.data.datasets[0].backgroundColor instanceof Array).toBeTrue();
+      fixture.destroy();
+    });
+  }
 });

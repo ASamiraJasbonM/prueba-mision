@@ -1,5 +1,9 @@
 # Validación del endurecimiento Angular — 2026-11-18
 
+> Snapshot histórico de esa revisión. Los conteos de pruebas y pendientes se
+> refieren al 18 de noviembre. Estado vigente en [ESTADO_ACTUAL](ESTADO_ACTUAL.md);
+> la suite de navegador incorporada después se documenta en [E2E](E2E.md).
+
 ## Decisiones por etapa
 
 | Etapa | Resultado | Archivos clave |

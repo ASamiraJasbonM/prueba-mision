@@ -1,5 +1,9 @@
 # Entrega de seguridad por etapa — 2026-11-18 UTC
 
+> Evidencia histórica del 18 de noviembre. Las salidas y límites se conservan sin
+> reescribirlas. Para despliegue, UI y pruebas incorporadas después consultar
+> [ESTADO_ACTUAL](ESTADO_ACTUAL.md) y el CI del commit vigente.
+
 ## Resultado global
 
 94 pruebas: **94 aprobadas en PostgreSQL16, sin skips** (81,344 s); SQLite:

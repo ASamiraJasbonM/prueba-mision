@@ -45,11 +45,11 @@ rota claves de una base existente. Para configuración manual, generar todas las
 claves indicadas en `.env.example`, no solo SECRET_KEY.
 La configuración lee `.env` desde la raíz. `SECRET_KEY` es obligatorio. SQLite local; PostgreSQL mediante `DATABASE_URL`. `DEBUG=False` activa cookies seguras y redirección HTTPS salvo ajuste explícito para un proxy de desarrollo.
 
-uv crea y mantiene `.venv`; no se instala el proyecto con pip. `pyproject.toml` declara las dependencias directas y las restricciones transitivas verificadas; `uv.lock` fija resolución, fuentes y hashes. Python queda acotado a `>=3.12,<3.13` para conservar el entorno validado. Las pruebas actuales no requieren paquetes adicionales: el grupo `dev` está vacío. Ver [gestión de dependencias con uv](docs/DEPENDENCIAS_UV.md).
+uv crea y mantiene `.venv`; no se instala el proyecto con pip. `pyproject.toml` declara las dependencias directas y las restricciones transitivas verificadas; `uv.lock` fija resolución, fuentes y hashes. Python queda acotado a `>=3.12,<3.13` para conservar el entorno validado. Django/unittest ejecutan las pruebas; el grupo `dev` incorpora Bandit y pip-audit para los controles de CI. Ver [gestión de dependencias con uv](docs/DEPENDENCIAS_UV.md).
 
 API local: http://127.0.0.1:8000/api/ ; Swagger local: http://127.0.0.1:8000/api/docs/ . Frontend local: http://127.0.0.1:4200 (Angular) o http://127.0.0.1:8080 (Docker). La documentación API está desactivada en el despliegue público.
 
-Documentación: [contrato y payloads](docs/API.md), [arquitectura y ER](docs/ARQUITECTURA.md), [fuentes verificadas](docs/FUENTES.md), [resultados por etapa](docs/ETAPAS.md).
+Documentación vigente: [estado y límites actuales](docs/ESTADO_ACTUAL.md), [contrato y payloads](docs/API.md), [arquitectura y ER](docs/ARQUITECTURA.md), [fuentes verificadas](docs/FUENTES.md), [ejecución E2E](docs/E2E.md). Los [resultados por etapa](docs/ETAPAS.md) son evidencia histórica, con los comandos y conteos de su fecha.
 
 Las adaptaciones de modelo, campos de transparencia y endpoints adicionales están identificados en [Extensiones respecto al PDF](docs/API.md#extensiones-respecto-al-pdf). El resto de operaciones del contrato backend requerido se conserva; las limitaciones de validación y el alcance de la entrega se indican por separado. Los campos de título, mensaje, severidad y tipo de alerta ya pertenecen al modelo del enunciado.
 
@@ -222,6 +222,6 @@ SECRET_KEY independientes desde gestor de secretos. DEBUG=False, HTTPS y CAPTCHA
 activo; docs UI desactivada por defecto. `.env.example` es para demo local.
 MFA del ADMIN es opcional y seed no lo habilita. Angular incorpora login/registro
 con CAPTCHA y login MFA mediante TOTP o recovery, con logout entre pestañas.
-La página de enrolamiento MFA y el TLS real siguen pendientes de despliegue;
+La página de enrolamiento MFA sigue pendiente; HTTPS ya está activo en Render/Pages;
 ver [validación frontend](docs/VALIDACION_SEGURIDAD_FRONTEND.md).
 Dependencias administradas solo con uv; Docker/CI usan uv 0.13.9 corregido.

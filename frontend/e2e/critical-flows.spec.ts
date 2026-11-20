@@ -1,0 +1,128 @@
+import { expect, test, Page, APIRequestContext } from '@playwright/test';
+import { readFile } from 'node:fs/promises';
+
+const password = 'DataPulse2026!';
+const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+
+async function login(page: Page, role = 'analista') {
+  await page.goto('/login');
+  await page.getByLabel('Correo electrónico').fill(`${role}@datapulse.com`);
+  await page.getByLabel('Contraseña', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Ingresar a DataPulse' }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+}
+
+async function apiLogin(request: APIRequestContext, role: string) {
+  const response = await request.post('/api/auth/login/', {
+    data: { email: `${role}@datapulse.com`, password },
+  });
+  expect(response.status()).toBe(200);
+  return { Authorization: `Bearer ${(await response.json()).access}` };
+}
+
+test('analyst creates, validates, edits and exports a portfolio through the real API', async ({ page }, info) => {
+  const errors: string[] = [];
+  page.on('pageerror', error => errors.push(error.message));
+  await login(page);
+  const menu = page.getByRole('button', { name: 'Abrir navegación', exact: true });
+  if (await menu.isVisible()) await menu.click();
+  await page.getByRole('link', { name: 'Mis portafolios', exact: true }).click();
+  await page.getByRole('link', { name: 'Crear portafolio' }).click();
+  const name = `E2E ${info.project.name} ${Date.now()}`;
+  await page.getByLabel('Nombre del portafolio').fill(name);
+  await page.getByLabel('Descripción').fill('Portafolio aislado de prueba de navegador.');
+  await page.getByRole('button', { name: 'Guardar portafolio' }).click();
+  await expect(page).toHaveURL(/\/portafolios\/\d+$/);
+  await page.getByRole('button', { name: 'Agregar posición' }).click();
+  let dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Buscar país').fill('Colombia');
+  await page.getByRole('option', { name: /Colombia/ }).click();
+  await dialog.getByLabel('Fecha de entrada').fill(yesterday);
+  await dialog.getByLabel('Monto de inversión USD').fill('999.99');
+  await expect(dialog.getByRole('button', { name: 'Aplicar posición' })).toBeDisabled();
+  await dialog.getByLabel('Monto de inversión USD').fill('1,234.56');
+  const created = page.waitForResponse(r => r.request().method() === 'POST' && /\/posiciones\/$/.test(r.url()));
+  await dialog.getByRole('button', { name: 'Aplicar posición' }).click();
+  const position = await created;
+  expect(position.status()).toBe(201);
+  expect((await position.json()).monto_inversion_usd).toBe('1234.56');
+  const row = page.getByRole('row').filter({ hasText: 'Colombia' });
+  await expect(row).toContainText('1.234,56');
+  await row.getByRole('button', { name: 'Editar', exact: true }).click();
+  dialog = page.getByRole('dialog');
+  await dialog.getByLabel('Monto de inversión USD').fill('2345.67');
+  const updated = page.waitForResponse(r => r.request().method() === 'PUT' && /\/posiciones\/\d+\/$/.test(r.url()));
+  await dialog.getByRole('button', { name: 'Aplicar posición' }).click();
+  expect((await updated).status()).toBe(200);
+  await expect(row).toContainText('2.345,67');
+  const downloading = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Exportar PDF' }).click();
+  const download = await downloading;
+  expect(download.suggestedFilename()).toMatch(/\.pdf$/);
+  const bytes = await readFile((await download.path())!);
+  expect(bytes.subarray(0, 5).toString()).toBe('%PDF-');
+  expect(bytes.length).toBeGreaterThan(200);
+  await expect(page.locator('app-data-chart[kind="pie"] canvas')).toBeVisible();
+  await expect(page.locator('app-data-chart[kind="doughnut"] canvas')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  expect(errors).toEqual([]);
+  await page.getByRole('button', { name: 'Eliminar portafolio', exact: true }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Eliminar', exact: true }).click();
+  await expect(page).toHaveURL(/\/portafolios$/);
+});
+
+test('stale edits show a conflict and require an explicit reviewed resubmission', async ({ page, request }, info) => {
+  const analyst = await apiLogin(request, 'analista');
+  const admin = await apiLogin(request, 'admin');
+  const created = await request.post('/api/portafolios/', {
+    headers: analyst, data: { nombre: `Conflicto ${info.project.name} ${Date.now()}`, descripcion: '', es_publico: true },
+  });
+  expect(created.status()).toBe(201);
+  const portfolio = await created.json();
+  const path = `/api/portafolios/${portfolio.id}/`;
+  try {
+    await login(page);
+    await page.goto(`/portafolios/${portfolio.id}/editar`);
+    await expect(page.getByLabel('Nombre del portafolio')).toHaveValue(portfolio.nombre);
+    const external = await request.put(path, { headers: admin, data: {
+      nombre: portfolio.nombre, descripcion: 'Cambio externo', es_publico: true, version: portfolio.version,
+    } });
+    expect(external.status()).toBe(200);
+    await page.getByLabel('Descripción').fill('Borrador local');
+    const conflicting = page.waitForResponse(r => r.request().method() === 'PUT' && r.url().endsWith(path));
+    await page.getByRole('button', { name: 'Guardar portafolio' }).click();
+    expect((await conflicting).status()).toBe(409);
+    await expect(page.getByText('Otro cambio actualizó este portafolio.', { exact: false })).toBeVisible();
+    await expect(page.getByLabel('Descripción')).toHaveValue('Cambio externo');
+    const persisted = await request.get(path, { headers: analyst });
+    expect((await persisted.json()).descripcion).toBe('Cambio externo');
+    await page.getByLabel('Descripción').fill('Revisado después del conflicto');
+    await page.getByRole('button', { name: 'Guardar portafolio' }).click();
+    await expect(page).toHaveURL(new RegExp(`/portafolios/${portfolio.id}$`));
+    await expect(page.getByText('Revisado después del conflicto', { exact: true })).toBeVisible();
+  } finally {
+    const current = await request.get(path, { headers: analyst });
+    if (current.ok()) await request.delete(path, { headers: {
+      ...analyst, 'If-Match': `"${(await current.json()).version}"`,
+    } });
+  }
+});
+
+test('viewer cannot write and country flags work under production CSP on both viewports', async ({ page, request }, info) => {
+  await login(page, 'viewer');
+  await page.goto('/portafolios');
+  await expect(page.getByRole('link', { name: 'Crear portafolio' })).toHaveCount(0);
+  const viewer = await apiLogin(request, 'viewer');
+  expect((await request.post('/api/portafolios/', { headers: viewer, data: {} })).status()).toBe(403);
+  await page.goto('/portafolios/nuevo');
+  await expect(page).toHaveURL(/\/sin-permiso$/);
+  await expect(page.getByRole('heading', { name: 'Este espacio requiere otros permisos' })).toBeVisible();
+  await page.goto('/paises/CO');
+  const flag = page.getByRole('img', { name: 'Bandera de Colombia', exact: true });
+  await expect(flag).toBeVisible();
+  await expect.poll(() => flag.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBeGreaterThan(0);
+  expect(new URL((await flag.getAttribute('src'))!, page.url()).origin).toBe(new URL(page.url()).origin);
+  await expect(page.locator('app-data-chart canvas')).toHaveCount(2);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await page.screenshot({ path: info.outputPath('country.png'), fullPage: true });
+});

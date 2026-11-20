@@ -19,14 +19,20 @@ import { StatusStateComponent } from '../../shared/components/status-state.compo
 import { DataChart, ChartSeries } from '../../shared/components/data-chart';
 import { chartNumber } from '../../shared/utils/decimal';
 import { utcDaysAgo, utcToday } from '../../shared/utils/dates';
+import { CountryFlag } from '../../shared/components/country-flag';
 @Component({
-  imports: [UiModule, DecimalDisplayPipe, RiskBadgeComponent, StatusStateComponent, DataChart],
+  imports: [
+    UiModule, DecimalDisplayPipe, RiskBadgeComponent, StatusStateComponent, DataChart, CountryFlag,
+  ],
   template: `<a class="back-link" routerLink="/paises">← Explorar países</a>
     @if (country(); as c) {
       <div class="page-heading">
         <div>
           <p class="eyebrow">{{ c.region }} · {{ c.codigo_iso }}</p>
-          <h1>{{ c.nombre }}<span class="heading-dot">.</span></h1>
+          <div class="country-title">
+            <app-country-flag [code]="c.codigo_iso" [name]="c.nombre" />
+            <h1>{{ c.nombre }}<span class="heading-dot">.</span></h1>
+          </div>
           <p class="muted">
             {{ c.moneda_nombre }} ({{ c.moneda_codigo }}) · {{ c.poblacion | number }} habitantes
           </p>
@@ -206,6 +212,11 @@ import { utcDaysAgo, utcToday } from '../../shared/utils/dates';
         (retry)="load()"
       />
     }`,
+  styles: [`
+    .country-title { display: flex; align-items: center; gap: 16px; min-width: 0; }
+    .country-title h1 { min-width: 0; overflow-wrap: anywhere; }
+    app-country-flag { flex-shrink: 0; }
+  `],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class CountryDetailPage {

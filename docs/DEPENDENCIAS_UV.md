@@ -5,9 +5,9 @@ La fuente de dependencias activa es `pyproject.toml` + `uv.lock`. Se elimina `re
 ## Versiones y grupos
 
 - Python `>=3.12,<3.13` y `.python-version=3.12`: mismo minor que el backend validado, sin abrir soporte a 3.13.
-- uv 0.10.11 en Docker y GitHub Actions, coincidente con el ejecutable usado para generar el lock y verificar localmente.
-- Trece dependencias directas de producción con los pins pedidos. Las otras diecisiete versiones previas se mantienen mediante `constraint-dependencies`; no se convierten artificialmente en dependencias directas.
-- `dev = []`: Django/unittest ya proporcionan el runner de las 61 pruebas. No se añaden pytest, linters ni coverage ajenos al alcance. El grupo existe para futuras herramientas, y Docker usa `--no-dev`.
+- uv 0.13.9 en Docker y GitHub Actions. Los resultados de la migración inicial a uv 0.10.11 que aparecen abajo son históricos.
+- Dependencias de producción y restricciones transitivas en `pyproject.toml`; el lock conserva versiones y hashes exactos, incluidos los controles de seguridad incorporados después del bootstrap.
+- Django/unittest proporcionan el runner. El grupo `dev` contiene Bandit y pip-audit; Docker y el servidor E2E solo necesitan las dependencias de producción.
 - `package=false`: el backend no se empaqueta ni se instala editable. `compile-bytecode=true` prepara bytecode de las dependencias.
 
 ## Reproducir y actualizar

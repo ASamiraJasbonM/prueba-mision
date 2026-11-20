@@ -1,5 +1,9 @@
 # Entrega del backend DataPulse Latam
 
+> Informe histórico del cierre del encargo backend. Sus exclusiones, conteos y
+> validaciones pendientes corresponden a esa etapa. El frontend, despliegue y
+> mantenimiento posteriores están descritos en [ESTADO_ACTUAL](ESTADO_ACTUAL.md).
+
 ## Decisiones y alcance
 
 Backend Django 5.2/DRF con las operaciones del contrato backend requerido y extensiones documentadas. Implementación secuencial, migraciones generadas por Django, pruebas ejecutadas por etapa y commits locales incrementales en `feat/backend-datapulse`. Alcance acordado: backend completo; frontend Angular, despliegue público y video de 5–8 minutos quedan fuera de este encargo. No se afirma cumplir el 100% del PDF.

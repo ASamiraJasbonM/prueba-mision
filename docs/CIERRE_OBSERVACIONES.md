@@ -1,5 +1,9 @@
 # Cierre de observaciones del backend
 
+> Cierre histórico P1–P9 del backend. Las referencias a frontend o despliegue
+> pendientes describen ese momento; consultar [ESTADO_ACTUAL](ESTADO_ACTUAL.md)
+> para las entregas y verificaciones posteriores.
+
 Las correcciones se aplicaron en orden P1–P9, sin reescribir el proyecto, en commits locales separados de `feat/backend-datapulse`. Las evidencias siguientes contienen la salida completa de cada comando y su código de salida. El último bloque reúne los cinco comandos globales solicitados.
 
 | Observación | Resultado | Commit local | Evidencia completa |

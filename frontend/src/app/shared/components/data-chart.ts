@@ -109,7 +109,7 @@ export class DataChart implements AfterViewInit, OnDestroy {
   readonly selectedIndex = signal<{ index: number } | null>(null);
   readonly formatValue = chartValue;
   private cursorIndex: number | null = null;
-  readonly kind = input<'line' | 'doughnut'>('line');
+  readonly kind = input<'line' | 'pie' | 'doughnut'>('line');
   private canvas = viewChild<ElementRef<HTMLCanvasElement>>('canvas');
   private chart: Chart | null = null;
   private ready = false;
@@ -197,7 +197,7 @@ export class DataChart implements AfterViewInit, OnDestroy {
           label: s.label,
           data: s.data,
           borderColor: colors[i % colors.length],
-          backgroundColor: this.kind() === 'doughnut' ? colors : colors[i % colors.length] + '18',
+          backgroundColor: this.kind() !== 'line' ? colors : colors[i % colors.length] + '18',
           spanGaps: false,
           tension: 0,
           pointRadius: 3,
