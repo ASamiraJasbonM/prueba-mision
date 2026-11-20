@@ -83,6 +83,7 @@ services:
       <<: *backend-environment
       DATABASE_URL: postgresql://${POSTGRES_USER:-datapulse}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-datapulse}
       DEBUG: "False"
+      CACHE_SHARED: "True"
       SECURE_SSL_REDIRECT: "False"
       ALLOWED_HOSTS: "*"
     depends_on:

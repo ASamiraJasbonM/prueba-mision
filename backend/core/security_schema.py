@@ -8,8 +8,9 @@ def security_responses(result, generator, request, public):
         for method, operation in methods.items():
             if method not in {'get', 'post', 'put', 'delete', 'patch'}:
                 continue
-            operation.setdefault('responses', {}).setdefault('429', {**error, 'headers': {
-                'Retry-After': {'schema': {'type': 'integer'}, 'description': 'Segundos de espera.'}}})
+            if path not in {'/api/health/', '/api/ready/'}:
+                operation.setdefault('responses', {}).setdefault('429', {**error, 'headers': {
+                    'Retry-After': {'schema': {'type': 'integer'}, 'description': 'Segundos de espera.'}}})
             if path.startswith('/api/auth/') and method == 'post':
                 operation['responses'].setdefault('400', error)
                 operation['responses'].setdefault('401', error)

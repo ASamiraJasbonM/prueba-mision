@@ -10,6 +10,8 @@ flowchart LR
     Commands[GitHub Actions / management commands] --> Services
     Services --> ORM[Django ORM / transacciones]
     ORM --> DB[(PostgreSQL / SQLite demo)]
+    DRF --> Cache[Cuotas / caché compartida PostgreSQL]
+    Cache --> DB
     Services --> Providers[World Bank / ExchangeRate-API / REST Countries]
     DRF --> PDF[Reporte tabular ReportLab]
     DRF --> Audit[LogActividad]
@@ -69,6 +71,17 @@ La cadena de LogActividad es append-only, con hash y HMAC. AuditHead es un singl
 que serializa anexos: no es una FK adicional de dominio. Las claves de cifrado y
 auditoría se conservan entre despliegues; el inicializador local nunca sobrescribe
 un `.env` existente. Las credenciales públicas pertenecen únicamente a la demo.
+
+Las cuotas usan una tabla interna de caché, creada por la migración 0007. En
+PostgreSQL se serializa cada presupuesto por identidad/scope mediante advisory
+locks de transacción. No se cachean respuestas financieras ni se cambia el contrato
+de permisos. Liveness no toca dependencias; readiness prueba base y caché y el
+despliegue exige SHA y estado correctos en ambas sondas.
+
+Ranking e históricos precargan el país y obtienen el índice anterior mediante
+Subquery, con desempate fecha/pk. La serialización del ranking realiza una consulta
+y la del histórico anidado otra, independientemente del número de filas; se conserva
+el cálculo de variación y tendencia incluso cuando las fechas coinciden.
 
 El IRPC se calcula en Decimal sin redondeo intermedio. El valor final se cuantiza a 2 decimales ROUND_HALF_UP y se clasifica contra los umbrales 75/50/25 sobre el valor cuantizado.
 

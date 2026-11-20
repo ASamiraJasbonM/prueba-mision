@@ -16,6 +16,8 @@ deben interpretarse como el estado actual del sistema.
 | Acceso demo | Tres roles con DataPulse2026!, sin staff/superuser en las cuentas desplegadas | prepare_evaluation_accounts y verificaciones HTTP |
 | Tareas programadas | Dos jobs independientes, secretos restringidos a main, TLS y auditoría | cron-tasks.yml e informes por proveedor |
 | Pruebas | Django, Karma/Jasmine, infraestructura Node y Playwright desktop/tablet | workflows y docs/E2E.md |
+| Operación | Readiness de base/caché, cuotas compartidas y serializadas en PostgreSQL | health.py, throttling.py, migración 0007 y regresiones de concurrencia |
+| Consultas de riesgo | Ranking e históricos con valor anterior calculado en SQL y país precargado | risk_api.py y pruebas de presupuesto de consultas |
 
 ## Integraciones reales y duración
 
@@ -41,8 +43,10 @@ disponibles, conservando trazabilidad y faltantes explícitos.
 - localStorage conserva JWT como pide el ejercicio: CSP y escape reducen XSS,
   pero no convierten esos tokens en cookies HttpOnly.
 - MFA de ADMIN es opcional y tiene login funcional; falta la pantalla de enrolamiento.
-- Throttling usa caché por proceso; una cuota global multiproceso requeriría caché compartida.
-- Health acredita liveness y commit, sin una consulta de readiness de PostgreSQL.
+- Caché compartida y locks de cuota están habilitados por defecto con DEBUG=False;
+  las garantías concurrentes se validan en PostgreSQL. SQLite/memoria son de desarrollo.
+- Liveness conserva su contrato y readiness comprueba base/caché. Ambas rutas publican
+  el commit en Render; el pipeline exige que readiness también responda correctamente.
 - Reportes PDF tabulares; XLSX, WebSockets y gráficos en el PDF son extensiones opcionales.
 - Los planes gratuitos tienen suspensión/caducidad y no equivalen a disponibilidad garantizada.
 

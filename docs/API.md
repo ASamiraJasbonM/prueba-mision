@@ -2,12 +2,19 @@
 
 OpenAPI se genera desde serializers y decoradores: `GET /api/schema/` (YAML/JSON por negociación), Swagger `GET /api/docs/`. Validar con `python backend/manage.py spectacular --validate --fail-on-warn --file docs/openapi.yaml`.
 
-Autenticación: `Authorization: Bearer <access>`. Health, registro, login, refresh y documentación públicos. El resto requiere usuario activo. Códigos principales: 400 datos inválidos, 401 sin sesión/token vencido, 403 permisos, 404 invisible/inexistente, 409 versión antigua/conflicto, 429 límite. Errores tienen envoltura única en español.
+Autenticación: `Authorization: Bearer <access>`. Liveness, readiness, registro,
+login, refresh, CAPTCHA y documentación son públicos. El resto requiere usuario
+activo. Códigos principales: 400 datos inválidos, 401 sin sesión/token vencido,
+403 permisos, 404 invisible/inexistente, 409 versión antigua/conflicto, 429 límite
+y 503 cuando la dependencia operativa/cuota no está disponible. Errores tienen
+envoltura única en español.
 
 Listados: `{count,next,previous,results}`, `page`, `page_size` (20 por defecto, máximo 500), `ordering` para campos permitidos y prefijo `-` descendente. Países/portafolios tienen `search`. Seguir `next` hasta null al cargar históricos completos. Tendencias genera hasta 15 puntos (3 países × 5 años), incluyendo nulls por ausencia.
 
 | Método | Ruta | Observaciones |
 |---|---|---|
+| GET | `/api/health/` | Liveness sin base ni caché; 200 `{}`; sin throttling |
+| GET | `/api/ready/` | Consulta base y caché; 200 `{"status":"ready"}` o 503 `error.code=not_ready`; no-store y sin throttling |
 | POST | `/api/auth/register/` | email, nombre_completo, password; ANALISTA inicial; rechaza campos de privilegios |
 | POST | `/api/auth/login/` | email + password; access/refresh |
 | POST | `/api/auth/refresh/` | refresh |

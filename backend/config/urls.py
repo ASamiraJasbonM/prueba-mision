@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerSplitView
-from core.health import health
+from core.health import health, ready
 from core.auth_api import RegisterView, LoginView, MeView, PasswordChangeView
 from core.captcha_api import CaptchaView
 from core.mfa_api import MFAEnrollView, MFAVerifyView, MFADisableView, MFALoginView
@@ -36,6 +36,7 @@ urlpatterns = [
     path('api/auth/mfa/verify-login/', MFALoginView.as_view()),
     path('api/auth/captcha-image/', include('captcha.urls')),
     path('api/health/', health),
+    path('api/ready/', ready),
     path('admin/', admin.site.urls),
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/docs/', SpectacularSwaggerSplitView.as_view(url_name='schema')),

@@ -13,6 +13,14 @@ COMMIT = 'a' * 40
 
 
 class DeploymentTests(unittest.TestCase):
+    def test_release_is_not_ready_when_its_database_probe_is_unavailable(self):
+        healthy = MagicMock(status=200, headers={'X-Deployment-Commit': COMMIT})
+        healthy.__enter__.return_value = healthy
+        unavailable = MagicMock(status=503, headers={'X-Deployment-Commit': COMMIT})
+        unavailable.__enter__.return_value = unavailable
+        with patch.object(deployment, 'urlopen', side_effect=[healthy, unavailable]):
+            self.assertFalse(deployment.render_ready(COMMIT))
+
     def test_hook_pins_validated_commit_and_preserves_secret(self):
         url = deployment.release_hook('https://api.render.com/deploy/srv-example?key=private&ref=old', COMMIT)
         self.assertEqual(parse_qs(urlsplit(url).query), {'key': ['private'], 'ref': [COMMIT]})
@@ -90,6 +98,13 @@ class RenderWsgiTests(unittest.TestCase):
         with patch.dict(os.environ, {'RENDER_GIT_COMMIT': COMMIT}):
             self.assertEqual(adapter.application({'PATH_INFO': '/api/health/'}, start), [b'{}'])
         self.assertEqual(start.call_args.args[0], '200 OK')
+        self.assertIn(('X-Deployment-Commit', COMMIT), start.call_args.args[1])
+
+    def test_readiness_exposes_the_same_platform_commit(self):
+        adapter = self.adapter()
+        start = MagicMock()
+        with patch.dict(os.environ, {'RENDER_GIT_COMMIT': COMMIT}):
+            adapter.application({'PATH_INFO': '/api/ready/'}, start)
         self.assertIn(('X-Deployment-Commit', COMMIT), start.call_args.args[1])
 
     def test_other_routes_and_invalid_metadata_remain_unchanged(self):

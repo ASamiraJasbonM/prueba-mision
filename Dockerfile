@@ -46,6 +46,6 @@ EXPOSE 8000
 
 # Gunicorn trusts secure-scheme headers from loopback; do not broaden that trust.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD python -c "import os,urllib.request; h=os.environ.get('ALLOWED_HOSTS','localhost').split(',')[0].strip().lstrip('.'); h='localhost' if h=='*' else h; r=urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8000/api/health/', headers={'Host':h,'X-Forwarded-Proto':'https'}), timeout=3); assert r.status == 200"
+    CMD python -c "import os,urllib.request; h=os.environ.get('ALLOWED_HOSTS','localhost').split(',')[0].strip().lstrip('.'); h='localhost' if h=='*' else h; r=urllib.request.urlopen(urllib.request.Request('http://127.0.0.1:8000/api/ready/', headers={'Host':h,'X-Forwarded-Proto':'https'}), timeout=3); assert r.status == 200"
 
 CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3", "--timeout", "60"]

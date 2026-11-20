@@ -30,6 +30,16 @@ class Moneda(models.Model):
         return self.codigo
 
 
+class SharedCacheEntry(models.Model):
+    """Schema owned by migrations; values are managed by Django DatabaseCache."""
+    cache_key = models.CharField(max_length=255, primary_key=True)
+    value = models.TextField()
+    expires = models.DateTimeField(db_index=True)
+
+    class Meta:
+        db_table = 'datapulse_cache'
+
+
 class UsuarioManager(BaseUserManager):
     def create_user(self, email, password=None, **extra):
         if not email:

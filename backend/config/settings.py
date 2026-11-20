@@ -56,6 +56,15 @@ STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'core.Usuario'
+CACHE_SHARED = env.bool('CACHE_SHARED', default=not DEBUG)
+CACHES = {'default': {
+    'BACKEND': ('core.cache.SharedDatabaseCache' if CACHE_SHARED else
+                'django.core.cache.backends.locmem.LocMemCache'),
+    'LOCATION': 'datapulse_cache' if CACHE_SHARED else 'datapulse-local',
+    'KEY_PREFIX': 'datapulse',
+    'TIMEOUT': 300,
+    'OPTIONS': {'MAX_ENTRIES': 10000},
+}}
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
 CORS_ALLOW_HEADERS = [*default_headers, 'if-match', 'idempotency-key']
 CORS_EXPOSE_HEADERS = ['ETag']
@@ -122,7 +131,7 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20,
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend',
                                'rest_framework.filters.SearchFilter', 'rest_framework.filters.OrderingFilter'],
-    'DEFAULT_THROTTLE_CLASSES': ['rest_framework.throttling.AnonRateThrottle', 'rest_framework.throttling.UserRateThrottle', 'core.security_auth.ActionThrottle'],
+    'DEFAULT_THROTTLE_CLASSES': ['core.throttling.SharedAnonRateThrottle', 'core.throttling.SharedUserRateThrottle', 'core.security_auth.ActionThrottle'],
     'DEFAULT_THROTTLE_RATES': {'user': '100/min', 'anon': '20/min', 'login': '5/min',
         'register': '3/min', 'sync': '2/hour', 'recalcular': '2/hour', 'export_pdf': '10/min', 'mfa_verify': '5/min'},
     'NUM_PROXIES': 0,

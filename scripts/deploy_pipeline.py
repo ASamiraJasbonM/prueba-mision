@@ -45,6 +45,10 @@ def render_ready(commit):
     request = Request(BACKEND + '/api/health/?release=' + commit,
                       headers=REQUEST_HEADERS)
     with urlopen(request, timeout=45) as response:
+        if response.status != 200 or response.headers.get('X-Deployment-Commit') != commit:
+            return False
+    request = Request(BACKEND + '/api/ready/?release=' + commit, headers=REQUEST_HEADERS)
+    with urlopen(request, timeout=15) as response:
         return response.status == 200 and response.headers.get('X-Deployment-Commit') == commit
 
 

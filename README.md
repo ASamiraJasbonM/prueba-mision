@@ -7,6 +7,7 @@ Implementación por etapas de Django + DRF con frontend Angular. Backend despleg
 - Frontend: https://datapulse-latam.pages.dev
 - Backend API: https://datapulse-backend-vkc5.onrender.com/api/
 - Health check: https://datapulse-backend-vkc5.onrender.com/api/health/
+- Readiness (base y caché): https://datapulse-backend-vkc5.onrender.com/api/ready/
 
 Rama de despliegue: `main`. Configuración y comandos: [guía de despliegue](DEPLOYMENT.md).
 Frontend CI compila con `npm run build:pages`, que configura API y CSP. Su job final
@@ -15,6 +16,11 @@ automáticos de Cloudflare deben estar desactivados. Backend CI contiene su prop
 job final para Render, condicionado a todas sus pruebas y controles de seguridad.
 Render ejecuta migraciones antes de Gunicorn. Ambos jobs verifican el commit activo;
 no hay un workflow de despliegue separado.
+
+El gate de Render comprueba el SHA tanto en liveness como en readiness. El segundo
+ejecuta una consulta de base de datos y lectura de caché: devuelve 503 si una falla,
+sin exponer detalles. Docker usa readiness en su healthcheck. `/api/health/`
+conserva `{}` y no depende de la base ni consume cuota de solicitudes.
 
 En Render, `CORS_ALLOWED_ORIGINS=https://datapulse-latam.pages.dev` y
 `ALLOWED_HOSTS=datapulse-backend-vkc5.onrender.com`. Las claves y la conexión
@@ -44,6 +50,14 @@ la contraseña PostgreSQL local. Si `.env` ya existe, lo conserva sin cambios; n
 rota claves de una base existente. Para configuración manual, generar todas las
 claves indicadas en `.env.example`, no solo SECRET_KEY.
 La configuración lee `.env` desde la raíz. `SECRET_KEY` es obligatorio. SQLite local; PostgreSQL mediante `DATABASE_URL`. `DEBUG=False` activa cookies seguras y redirección HTTPS salvo ajuste explícito para un proxy de desarrollo.
+
+Con DEBUG=False la caché compartida de base de datos se activa por defecto; el
+`.env` local fija CACHE_SHARED=False para SQLite. En PostgreSQL/múltiples workers,
+usar CACHE_SHARED=True. `migrate` crea la tabla interna `datapulse_cache`; no requiere
+Redis ni credenciales adicionales. Las cuotas de PostgreSQL serializan lectura y
+escritura por identidad con locks transaccionales; si una escritura de cuota falla,
+la API responde 503 en lugar de aceptar una solicitud sin contabilizarla. SQLite y
+el modo de memoria son para desarrollo, sin garantía de concurrencia multiproceso.
 
 uv crea y mantiene `.venv`; no se instala el proyecto con pip. `pyproject.toml` declara las dependencias directas y las restricciones transitivas verificadas; `uv.lock` fija resolución, fuentes y hashes. Python queda acotado a `>=3.12,<3.13` para conservar el entorno validado. Django/unittest ejecutan las pruebas; el grupo `dev` incorpora Bandit y pip-audit para los controles de CI. Ver [gestión de dependencias con uv](docs/DEPENDENCIAS_UV.md).
 

@@ -22,9 +22,40 @@ Render Free no ofrece Shell ni pre-deploy commands. El comando de arranque aplic
 `migrate --noinput` antes de iniciar Gunicorn y falla si las migraciones fallan.
 El CMD normal de Docker sigue intacto; el override solo se usa en Render.
 El adaptador WSGI de infraestructura añade `X-Deployment-Commit` únicamente al
-healthcheck, usando `RENDER_GIT_COMMIT` de la plataforma. El job fija el SHA en el
-hook y espera HTTP 200 con ese mismo SHA; una versión anterior sana no basta.
+healthcheck y readiness, usando `RENDER_GIT_COMMIT` de la plataforma. El job fija
+el SHA en el hook y espera HTTP 200 con ese mismo SHA en ambas rutas; una versión
+anterior sana o un proceso vivo con base/caché inaccesibles no bastan.
 No necesita una clave de API de la cuenta de Render.
+
+La configuración actual de Render conserva `/api/health/` como liveness. El gate
+adicional de CI consulta `/api/ready/` y el healthcheck Docker usa esa ruta.
+Puede utilizarse como readiness de un balanceador: 200 cuando base y caché responden,
+503 con error genérico cuando no. Las dos sondas son públicas, sin autenticación ni
+throttling; no devuelven datos de negocio, DSN ni excepciones internas.
+
+## Caché y cuotas compartidas
+
+Con DEBUG=False y sin override, CACHE_SHARED=True activa la caché PostgreSQL en
+`datapulse_cache`. Para habilitarla explícitamente, configurar CACHE_SHARED=True en
+Render; no se precisa un servicio ni secreto nuevo. Si se copió el .env de desarrollo,
+revisar su CACHE_SHARED=False antes de usarlo en producción.
+
+La migración 0007 solo crea la tabla de caché e índice de expiración, sin modificar
+usuarios, portafolios, indicadores ni auditoría. El arranque de Render aplica la
+migración antes de Gunicorn; readiness comprueba también la lectura de esa tabla.
+No ejecutar createcachetable por separado: el esquema pertenece a las migraciones.
+
+Los throttles conservan 100/min autenticados, 20/min anónimos y las cuotas de acción.
+En PostgreSQL, cada identidad/scope usa un advisory lock de transacción mientras
+lee/guarda su historial compartido. El lock termina antes de ejecutar la vista;
+no se mantiene durante llamadas externas ni escrituras de negocio. Una escritura
+fallida de cuota se rechaza con 503. La prueba de concurrencia usa cuatro conexiones
+independientes y acredita que una sola puede consumir el último slot disponible.
+
+La tabla contiene únicamente estado de caché y expiración. Tiene límite de 10.000
+entradas y limpieza por expiración/culling de Django; no es una caché de respuestas
+financieras. El cliente sigue identificado por usuario o REMOTE_ADDR: no se amplía
+la confianza de X-Forwarded-For. Las cuotas no sustituyen una protección DDoS de borde.
 
 El seed se ejecuta **una vez**, desde un entorno local controlado con las cuatro
 claves y la URL externa PostgreSQL con TLS (`sslmode=require`):

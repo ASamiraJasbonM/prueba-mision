@@ -20,6 +20,14 @@ def latest_risks():
     return IndiceRiesgo.objects.filter(pk=Subquery(latest), pais__activo=True).select_related('pais')
 
 
+def with_previous_risk(queryset):
+    previous = IndiceRiesgo.objects.filter(pais_id=OuterRef('pais_id')).filter(
+        Q(fecha_calculo__lt=OuterRef('fecha_calculo')) |
+        Q(fecha_calculo=OuterRef('fecha_calculo'), pk__lt=OuterRef('pk'))
+    ).order_by('-fecha_calculo', '-pk').values('indice_compuesto')[:1]
+    return queryset.select_related('pais').annotate(_previous_index=Subquery(previous))
+
+
 class RiesgoSerializer(serializers.ModelSerializer):
     pais_nombre = serializers.CharField(source='pais.nombre', read_only=True)
     variacion = serializers.SerializerMethodField()
@@ -31,9 +39,14 @@ class RiesgoSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(serializers.DecimalField(max_digits=6, decimal_places=2, allow_null=True))
     def get_variacion(self, obj):
-        previous = IndiceRiesgo.objects.filter(pais_id=obj.pais_id).filter(
-            Q(fecha_calculo__lt=obj.fecha_calculo) | Q(fecha_calculo=obj.fecha_calculo, pk__lt=obj.pk)).first()
-        return str(quantize(obj.indice_compuesto-previous.indice_compuesto)) if previous else None
+        if not hasattr(obj, '_previous_index'):
+            # Preserve direct serializer use outside the optimized API querysets.
+            obj._previous_index = IndiceRiesgo.objects.filter(pais_id=obj.pais_id).filter(
+                Q(fecha_calculo__lt=obj.fecha_calculo) |
+                Q(fecha_calculo=obj.fecha_calculo, pk__lt=obj.pk)
+            ).order_by('-fecha_calculo', '-pk').values_list('indice_compuesto', flat=True).first()
+        previous = obj._previous_index
+        return str(quantize(obj.indice_compuesto-previous)) if previous is not None else None
 
     def get_tendencia(self, obj) -> str:
         delta = self.get_variacion(obj)
@@ -49,7 +62,8 @@ class RiesgoDetailSerializer(RiesgoSerializer):
 
     @extend_schema_field(RiesgoSerializer(many=True))
     def get_historico(self, obj):
-        return RiesgoSerializer(IndiceRiesgo.objects.filter(pais_id=obj.pais_id)[:20], many=True).data
+        records = with_previous_risk(IndiceRiesgo.objects.filter(pais_id=obj.pais_id))[:20]
+        return RiesgoSerializer(records, many=True, context=self.context).data
 
     def get_historico_url(self, obj) -> str:
         return f'/api/riesgo/{obj.pais_id}/historico/'
@@ -84,8 +98,8 @@ class RiesgoViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         if self.action == 'historico':
-            return super().get_queryset().filter(pais__activo=True)
-        return latest_risks()
+            return with_previous_risk(super().get_queryset().filter(pais__activo=True))
+        return with_previous_risk(latest_risks())
 
     @extend_schema(parameters=[OpenApiParameter('codigo_iso', str, OpenApiParameter.PATH)])
     @action(detail=True, methods=['get'])

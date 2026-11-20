@@ -31,6 +31,7 @@ def main():
             'FIELD_ENCRYPTION_KEY': base64.urlsafe_b64encode(secrets.token_bytes(32)).decode(),
             'DATABASE_URL': 'sqlite:///' + (Path(directory) / 'e2e.sqlite3').as_posix(),
             'DEBUG': 'False', 'SECURE_SSL_REDIRECT': 'False', 'TRUST_PROXY_SSL_HEADER': 'False',
+            'CACHE_SHARED': 'False',
             'CAPTCHA_ENFORCED': 'False', 'API_DOCS_ENABLED': 'False',
             'ALLOWED_HOSTS': '127.0.0.1,localhost', 'CORS_ALLOWED_ORIGINS': '', 'JWT_SIGNING_KEY': '',
         })

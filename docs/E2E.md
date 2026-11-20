@@ -38,7 +38,7 @@ en el mismo origen con la CSP de producción. No toma conexión ni claves de .en
 no consulta proveedores, no permite un BASE_URL remoto y no reutiliza un servidor
 existente. Las instancias normales 4200/8000 y la base demo no se tocan.
 
-Solo la fixture efímera desactiva CAPTCHA y amplía throttling para ejecutar el
+Solo la fixture efímera usa caché en memoria, desactiva CAPTCHA y amplía throttling para ejecutar el
 recorrido de negocio sin retos humanos ni cuotas entre casos. Los controles de
 CAPTCHA, MFA y throttling de producción conservan sus regresiones independientes.
 El build E2E restaura environment.prod.ts al terminar y no cambia la URL de Pages.

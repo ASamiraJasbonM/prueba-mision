@@ -921,18 +921,6 @@ paths:
       responses:
         '200':
           description: No response body
-        '429':
-          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
-            o validation_error.'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-          headers:
-            Retry-After:
-              schema:
-                type: integer
-              description: Segundos de espera.
   /api/paises/:
     get:
       operationId: paises_list
@@ -1691,6 +1679,24 @@ paths:
               schema:
                 type: integer
               description: Segundos de espera.
+  /api/ready/:
+    get:
+      operationId: ready_retrieve
+      tags:
+      - ready
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ready'
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: ''
   /api/riesgo/:
     get:
       operationId: riesgo_list
@@ -2988,6 +2994,13 @@ components:
       - id
       - nombre_completo
       - rol
+    Ready:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+      - status
     RecalculateReport:
       type: object
       properties:

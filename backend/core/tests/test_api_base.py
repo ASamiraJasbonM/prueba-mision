@@ -1,9 +1,9 @@
 from django.core.cache import cache
-from django.test import SimpleTestCase
+from django.test import TestCase
 from rest_framework.exceptions import ValidationError
 
 
-class ApiBaseTests(SimpleTestCase):
+class ApiBaseTests(TestCase):
     def tearDown(self):
         cache.clear()
 
@@ -17,8 +17,8 @@ class ApiBaseTests(SimpleTestCase):
     def test_anonymous_rate_limit(self):
         cache.clear()
         for _ in range(20):
-            self.assertEqual(self.client.get('/api/health/').status_code, 200)
-        response = self.client.get('/api/health/')
+            self.assertEqual(self.client.get('/api/auth/captcha/').status_code, 200)
+        response = self.client.get('/api/auth/captcha/')
         self.assertEqual(response.status_code, 429)
         self.assertIn('error', response.json())
 

@@ -10,6 +10,7 @@ from captcha.fields import CaptchaField
 from rest_framework.exceptions import APIException, Throttled
 from rest_framework.throttling import ScopedRateThrottle
 from core.audit import audit
+from core.throttling import SharedBudgetMixin
 
 
 def client_ip(request):
@@ -52,7 +53,7 @@ def login_preflight(request, email):
         check_captcha(request.data)
 
 
-class ActionThrottle(ScopedRateThrottle):
+class ActionThrottle(SharedBudgetMixin, ScopedRateThrottle):
     def allow_request(self, request, view):
         scopes = {'sync_indicadores': 'sync', 'calcular': 'recalcular', 'export_pdf': 'export_pdf'}
         # Viewsets choose their action before throttles execute.
