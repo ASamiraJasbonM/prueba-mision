@@ -173,24 +173,34 @@ import { utcToday } from '../../shared/utils/dates';
             ><ng-container matColumnDef="acciones"
               ><th mat-header-cell *matHeaderCellDef>Acciones</th>
               <td mat-cell *matCellDef="let x">
-                @if (auth.canEdit(p) && !x.fecha_salida) {
+                @if (auth.canEdit(p)) {
+                  @if (!x.fecha_salida) {
+                    <button
+                      mat-button
+                      (click)="position(x)"
+                      [disabled]="state.busy() || !state.fresh()"
+                    >
+                      Editar</button
+                    ><button
+                      mat-button
+                      (click)="close(x)"
+                      [disabled]="state.busy() || !state.fresh() || x.fecha_entrada >= today"
+                      [matTooltip]="
+                        x.fecha_entrada >= today
+                          ? 'Disponible a partir del siguiente día UTC'
+                          : 'Cerrar posición'
+                      "
+                    >
+                      Cerrar
+                    </button>
+                  }
                   <button
                     mat-button
-                    (click)="position(x)"
+                    color="warn"
+                    (click)="removePosition(x)"
                     [disabled]="state.busy() || !state.fresh()"
                   >
-                    Editar</button
-                  ><button
-                    mat-button
-                    (click)="close(x)"
-                    [disabled]="state.busy() || !state.fresh() || x.fecha_entrada >= today"
-                    [matTooltip]="
-                      x.fecha_entrada >= today
-                        ? 'Disponible a partir del siguiente día UTC'
-                        : 'Cerrar posición'
-                    "
-                  >
-                    Cerrar
+                    Eliminar
                   </button>
                 } @else {
                   <span class="muted">Consulta</span>
@@ -313,6 +323,19 @@ export class PortfolioDetailPage {
         this.state
           .close(this.id, position.id, this.state.detail()!.version)
           .subscribe({ next: () => this.notify.show('Posición cerrada.'), error: () => {} }),
+    );
+  }
+  removePosition(position: Position): void {
+    const p = this.state.detail();
+    if (!p || !this.auth.canEdit(p) || this.state.busy() || !this.state.fresh()) return;
+    this.confirm(
+      'Eliminar posición',
+      'La posición se eliminará de forma permanente y no se podrá recuperar.',
+      'Eliminar',
+      () =>
+        this.state
+          .removePosition(this.id, position.id, this.state.detail()!.version)
+          .subscribe({ next: () => this.notify.show('Posición eliminada.'), error: () => {} }),
     );
   }
   remove(): void {

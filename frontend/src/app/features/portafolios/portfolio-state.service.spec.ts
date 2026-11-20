@@ -25,6 +25,16 @@ describe('PortfolioStateService', () => {
     expect(state.detail()?.version).toBe(3);
     expect(state.busy()).toBeFalse();
   });
+  it('hard-deletes a position via the eliminar endpoint and refreshes', () => {
+    state.removePosition(7, 3, 2).subscribe();
+    const req = http.expectOne('/api/portafolios/7/posiciones/3/eliminar/');
+    expect(req.request.method).toBe('DELETE');
+    expect(req.request.headers.get('If-Match')).toBe('"2"');
+    req.flush(null, { status: 204, statusText: 'No Content' });
+    http.expectOne('/api/portafolios/7/').flush({ id: 7, version: 3 });
+    expect(state.detail()?.version).toBe(3);
+    expect(state.busy()).toBeFalse();
+  });
   it('refreshes on 409 and requires explicit resubmission', () => {
     let failed = false;
     state

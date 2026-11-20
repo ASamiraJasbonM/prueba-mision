@@ -31,6 +31,12 @@ export class PortfolioStateService {
       this.api.delete('portafolios/' + id + '/posiciones/' + positionId + '/', version),
     );
   }
+  removePosition(id: number, positionId: number, version: number) {
+    return this.write(
+      id,
+      this.api.delete('portafolios/' + id + '/posiciones/' + positionId + '/eliminar/', version),
+    );
+  }
   remove(id: number, version: number) {
     this.busy.set(true);
     return this.api.delete('portafolios/' + id + '/', version).pipe(

@@ -1707,6 +1707,60 @@ paths:
               schema:
                 type: integer
               description: Segundos de espera.
+  /api/portafolios/{id}/posiciones/{posicion_id}/eliminar/:
+    delete:
+      operationId: portafolios_posiciones_eliminar
+      parameters:
+      - in: header
+        name: If-Match
+        schema:
+          type: string
+          pattern: ^"[1-9][0-9]*"$
+        description: 'ETag fuerte de la versión actual del portafolio padre; por ejemplo:
+          "2". No se lee versión del body DELETE.'
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: Un valor de entero único que identifique este portafolio.
+        required: true
+      - in: path
+        name: posicion_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - portafolios
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          description: ''
+        '429':
+          description: 'Error uniforme. 429: throttled o account_locked; 400: captcha_required
+            o validation_error.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Segundos de espera.
   /api/portafolios/{id}/resumen/:
     get:
       operationId: portafolios_resumen_retrieve
