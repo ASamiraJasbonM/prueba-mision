@@ -46,7 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # Keep 3.12: pyproject.toml and the production image use this interpreter.
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@v7
@@ -81,7 +81,7 @@ jobs:
       DATABASE_URL: sqlite:////tmp/datapulse-tests.sqlite3
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@v7
@@ -115,7 +115,7 @@ jobs:
       DATABASE_URL: postgresql://datapulse:datapulse@127.0.0.1:5432/datapulse
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@v7
@@ -208,7 +208,7 @@ jobs:
       url: https://datapulse-backend-vkc5.onrender.com
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Deploy the checked commit and verify the live backend

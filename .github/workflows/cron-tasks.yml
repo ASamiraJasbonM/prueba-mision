@@ -53,7 +53,7 @@ jobs:
           if url.scheme not in ('postgres', 'postgresql') or not url.hostname or parse_qs(url.query).get('sslmode') not in (['require'], ['verify-ca'], ['verify-full']):
               raise SystemExit('DATABASE_URL must use external PostgreSQL with sslmode=require or stronger.')
           PY
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - uses: astral-sh/setup-uv@v7
