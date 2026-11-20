@@ -98,7 +98,7 @@ jobs:
           uv run --frozen coverage report
           uv run --frozen coverage xml
           uv run --frozen coverage html
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: backend-coverage
@@ -174,7 +174,7 @@ jobs:
             "$IMAGE" uv run --frozen --no-sync --no-dev python backend/manage.py check
       - name: Export the exact image for security scanning
         run: docker save datapulse-backend:${{ github.sha }} -o /tmp/backend-image.tar
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: backend-image
           path: /tmp/backend-image.tar
@@ -202,7 +202,7 @@ jobs:
           ignore-unfixed: true
           format: json
           output: trivy-backend.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: backend-security-report
