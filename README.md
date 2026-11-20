@@ -122,11 +122,18 @@ uv run --frozen python backend/manage.py sync_indicadores
 uv run --frozen python backend/manage.py sync_tipos_cambio
 uv run --frozen python backend/manage.py recalcular_irpc
 uv run --frozen python backend/manage.py sync_paises
+uv run --frozen python backend/manage.py sync_diaria
 ```
 
 `sync_indicadores` siempre encadena recálculo, incluso ante fallos parciales; cambio diario también recalcula. Reintentos HTTP: máximo dos adicionales, timeout por petición configurable, solo GET y fallos transitorios. Sincronización por país/indicador, transacciones cortas sin llamadas de red dentro. No se eliminan datos anteriores ante errores. Para REST Countries v5 configurar `REST_COUNTRIES_API_KEY` (ver docs/FUENTES.md).
 
 Código de salida: `sync_indicadores` y `sync_tipos_cambio` terminan con código 0 ante éxito total o parcial, y con código 1 ante fallo total (cero actualizaciones y al menos un error), de modo que cron o GitHub Actions puedan detectar un fallo total del proveedor.
+
+La automatización del despliegue usa `sync_diaria`: intenta indicadores y cambio
+diario, cada uno con recálculo, y falla también ante errores parciales o de recálculo.
+GitHub Actions la ejecuta a las 02:00 UTC, con secretos del entorno
+`production-maintenance` restringido a `main`, PostgreSQL externo con TLS y un
+informe JSON conservado como artifact. Ver [configuración y comprobación](DEPLOYMENT.md#tareas-diarias-reales).
 
 Ejemplo cron UTC, ajustando rutas y entorno; ejecutar desde la raíz del proyecto:
 
@@ -170,7 +177,12 @@ El runner usa base efímera limpia. Tests verifican constraints, auth/roles, con
 
 Para PostgreSQL local con Docker activo: definir `POSTGRES_PASSWORD` en `.env`, ejecutar `docker compose up -d db` y establecer `DATABASE_URL=postgresql://datapulse:TU_PASSWORD@localhost:5432/datapulse` (escapar caracteres reservados en URL). Ejecutar migrate, seed y toda la suite de nuevo. La cuenta local necesita permiso de crear la base efímera de pruebas; la cuenta creada por el contenedor lo tiene. El volumen conserva datos entre reinicios; no usar `down -v` si se desean conservar.
 
-PostgreSQL validado: 61 pruebas aprobadas, sin skips (evidencia en `frontend/README.md` y docs). No se han ejecutado sincronizaciones reales con claves personales ni instalado un scheduler. Configurar PostgreSQL, la clave REST Countries y cron antes del despliegue, y cumplir la atribución de ExchangeRate-API descrita en docs/FUENTES.md.
+La suite completa se valida en PostgreSQL sin skips y en SQLite con dos omisiones
+específicas de PostgreSQL, en [Backend CI](https://github.com/ASamiraJasbonM/prueba-mision/actions/workflows/backend-ci.yml).
+El scheduler del despliegue es [Cron de sincronización programada](https://github.com/ASamiraJasbonM/prueba-mision/actions/workflows/cron-tasks.yml):
+su informe permite verificar indicadores, tipos de cambio y recálculos reales.
+REST Countries sigue requiriendo una clave personal y verificación independiente.
+Cumplir la atribución de ExchangeRate-API descrita en docs/FUENTES.md.
 
 
 - Etapa 00: Bootstrap, health y OpenAPI base
