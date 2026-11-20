@@ -57,3 +57,16 @@ class BatchedSyncTests(TestCase):
         self.assertEqual(existing.fuente, 'MANUAL')
         self.assertEqual(result['actualizados'], 5)
         self.assertEqual({error['pais'] for error in result['errores']}, {'CO', 'BR'})
+
+    def test_batch_falls_back_per_country_on_connection_error(self):
+        def response(url, **kwargs):
+            if ';' in url:
+                raise requests.ConnectionError('reset by peer')
+            code = url.split('/country/')[1].split('/indicator/')[0]
+            return [{'pages': 1}, [{'country': {'id': code}, 'date': str(self.year), 'value': '4'}]]
+        with patch('core.services.sync.get_json', side_effect=response) as fetch:
+            result = sync_indicators(batch=True)
+        self.assertEqual(result['errores'], [])
+        self.assertEqual(result['actualizados'], 12)
+        self.assertEqual(IndicadorEconomico.objects.count(), 12)
+        self.assertEqual(fetch.call_count, 18)
