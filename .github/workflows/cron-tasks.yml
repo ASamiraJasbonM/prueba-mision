@@ -42,7 +42,7 @@ jobs:
       EXTERNAL_API_TIMEOUT: "20"
       REST_COUNTRIES_API_KEY: ${{ secrets.DATAPULSE_REST_COUNTRIES_API_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Require production configuration and encrypted PostgreSQL
         run: |
           set -euo pipefail
