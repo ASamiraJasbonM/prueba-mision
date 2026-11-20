@@ -10,6 +10,9 @@ from urllib.request import Request, urlopen
 
 BACKEND = 'https://datapulse-backend-vkc5.onrender.com'
 FRONTEND = 'https://datapulse-latam.pages.dev'
+# Pages rejects urllib's generic default signature (Cloudflare error 1010).
+# Identify this authorized application explicitly; do not imitate a browser.
+REQUEST_HEADERS = {'User-Agent': 'DataPulse-Release-Verifier/1.0', 'Cache-Control': 'no-cache'}
 
 
 def release_hook(hook, commit):
@@ -25,7 +28,7 @@ def release_hook(hook, commit):
 
 
 def trigger_render(hook, commit):
-    request = Request(release_hook(hook, commit), method='POST')
+    request = Request(release_hook(hook, commit), headers=REQUEST_HEADERS, method='POST')
     try:
         with urlopen(request, timeout=60) as response:
             if response.status not in (200, 202):
@@ -40,18 +43,18 @@ def trigger_render(hook, commit):
 
 def render_ready(commit):
     request = Request(BACKEND + '/api/health/?release=' + commit,
-                      headers={'Cache-Control': 'no-cache'})
+                      headers=REQUEST_HEADERS)
     with urlopen(request, timeout=45) as response:
         return response.status == 200 and response.headers.get('X-Deployment-Commit') == commit
 
 
 def pages_ready(commit):
     request = Request(FRONTEND + '/deployment.json?release=' + commit,
-                      headers={'Cache-Control': 'no-cache'})
+                      headers=REQUEST_HEADERS)
     with urlopen(request, timeout=30) as response:
         if response.status != 200 or json.load(response).get('commit') != commit:
             return False
-    with urlopen(FRONTEND + '/login', timeout=30) as response:
+    with urlopen(Request(FRONTEND + '/login', headers=REQUEST_HEADERS), timeout=30) as response:
         html = response.read().decode('utf-8')
         policy = response.headers.get('Content-Security-Policy', '')
         return (response.status == 200 and '<app-root' in html and BACKEND in policy

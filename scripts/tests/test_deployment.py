@@ -55,6 +55,19 @@ class DeploymentTests(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, 'did not become healthy'):
                 deployment.wait_for_release(lambda commit: False, COMMIT, timeout=10)
 
+    def test_pages_validates_manifest_and_csp_with_identified_client(self):
+        manifest = MagicMock(status=200)
+        manifest.__enter__.return_value = manifest
+        manifest.read.return_value = ('{"commit":"' + COMMIT + '"}').encode()
+        index = MagicMock(status=200, headers={
+            'Content-Security-Policy': "script-src 'self'; connect-src " + deployment.BACKEND})
+        index.__enter__.return_value = index
+        index.read.return_value = b'<app-root></app-root>'
+        with patch.object(deployment, 'urlopen', side_effect=[manifest, index]) as fetch:
+            self.assertTrue(deployment.pages_ready(COMMIT))
+        for call in fetch.call_args_list:
+            self.assertEqual(call.args[0].get_header('User-agent'), 'DataPulse-Release-Verifier/1.0')
+
 
 class RenderWsgiTests(unittest.TestCase):
     def adapter(self):
