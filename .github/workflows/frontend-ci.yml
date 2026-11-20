@@ -8,6 +8,7 @@ on:
         "frontend/**",
         ".github/workflows/frontend-ci.yml",
         ".github/dependabot.yml",
+        "scripts/deploy_pipeline.py",
         ".gitattributes",
         "compose.yaml",
         "docs/SEGURIDAD_FRONTEND.md",
@@ -19,6 +20,7 @@ on:
         "frontend/**",
         ".github/workflows/frontend-ci.yml",
         ".github/dependabot.yml",
+        "scripts/deploy_pipeline.py",
         ".gitattributes",
         "compose.yaml",
         "docs/SEGURIDAD_FRONTEND.md",
@@ -30,7 +32,7 @@ permissions:
 
 concurrency:
   group: frontend-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 defaults:
   run:
@@ -59,6 +61,7 @@ jobs:
           node --check docker/smoke-test.mjs
           node --check docker/upstream-fixture.mjs
           node --check docker/check-production.mjs
+          node --check docker/build-pages.mjs
           node --check docker/check-source-security.mjs
           node docker/check-source-security.mjs
           sh -n docker/14-validate-backend.sh
@@ -96,7 +99,13 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci --no-audit --no-fund
-      - run: npm run build -- --configuration=production
+      - name: Build and validate the actual Pages artifact
+        env:
+          API_URL: https://datapulse-backend-vkc5.onrender.com/api/
+        run: |
+          npm run build:pages
+          jq -n --arg commit "$GITHUB_SHA" '{commit: $commit}' > dist/datapulse/browser/deployment.json
+          test -s dist/datapulse/browser/_headers
       - run: node docker/check-production.mjs
       - run: test -s dist/datapulse/browser/index.html
       - uses: actions/upload-artifact@v4
@@ -104,6 +113,44 @@ jobs:
           name: frontend-dist
           path: frontend/dist/datapulse/browser
           retention-days: 7
+
+  deploy-cloudflare:
+    needs: [lint-and-check, test, build, docker-build]
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: .
+    environment:
+      name: production-frontend
+      url: https://datapulse-latam.pages.dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22.12.0"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: pages-artifact
+      - name: Verify artifact identity before publication
+        run: |
+          test "$(jq -r .commit pages-artifact/deployment.json)" = "$GITHUB_SHA"
+          test -s pages-artifact/index.html
+          test -s pages-artifact/_headers
+      - name: Publish the validated artifact to Cloudflare Pages
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: a6653b0c4b73cfa306f7052a920ef9bc
+          wranglerVersion: "4.165.0"
+          command: pages deploy pages-artifact --project-name=datapulse-latam --branch=main --commit-hash=${{ github.sha }} --commit-dirty=false
+      - name: Verify the live Pages release and security headers
+        run: python scripts/deploy_pipeline.py pages
 
   docker-build:
     needs: [test, build]

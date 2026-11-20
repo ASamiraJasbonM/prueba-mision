@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 
 const apiUrl = process.env.API_URL;
 if (!apiUrl || new URL(apiUrl).protocol !== 'https:')
@@ -15,6 +15,9 @@ run(process.execPath, ['docker/configure-build.mjs', apiUrl, 'production']);
 run(process.execPath, ['node_modules/@angular/cli/bin/ng.js', 'build', '--configuration', 'production']);
 run(process.execPath, ['docker/finalize-index.mjs']);
 run(process.execPath, ['docker/check-production.mjs']);
+// Pages provides native SPA fallback without a top-level 404.html. Its redirect
+// validator rejects the catch-all /index.html rewrite as an infinite loop.
+rmSync('dist/datapulse/browser/_redirects', { force: true });
 const csp = JSON.parse(readFileSync('docker/csp-policy.json', 'utf8'));
 writeFileSync('dist/datapulse/browser/_headers', [
   '/*',

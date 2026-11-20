@@ -9,9 +9,12 @@ Implementación por etapas de Django + DRF con frontend Angular. Backend despleg
 - Health check: https://datapulse-backend-vkc5.onrender.com/api/health/
 
 Rama de despliegue: `main`. Configuración y comandos: [guía de despliegue](DEPLOYMENT.md).
-Cloudflare compila con `npm run build:pages`, que configura API y CSP; publica
-`frontend/dist/datapulse/browser`. Render ejecuta migraciones antes de Gunicorn.
-GitHub Actions llama al deploy hook únicamente después de Backend CI satisfactorio.
+Frontend CI compila con `npm run build:pages`, que configura API y CSP. Su job final
+publica en Pages el artefacto validado, tras Karma y Docker/Trivy; los despliegues
+automáticos de Cloudflare deben estar desactivados. Backend CI contiene su propio
+job final para Render, condicionado a todas sus pruebas y controles de seguridad.
+Render ejecuta migraciones antes de Gunicorn. Ambos jobs verifican el commit activo;
+no hay un workflow de despliegue separado.
 
 En Render, `CORS_ALLOWED_ORIGINS=https://datapulse-latam.pages.dev` y
 `ALLOWED_HOSTS=datapulse-backend-vkc5.onrender.com`. Las claves y la conexión

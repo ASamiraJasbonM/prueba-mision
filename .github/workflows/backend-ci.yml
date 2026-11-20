@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: backend-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 # Dummy values only. No .env, personal API keys, or deployment credentials in CI.
 # DEBUG stays false; redirect is explicitly off for HTTP test-client requests.
@@ -54,6 +54,8 @@ jobs:
           enable-cache: true
           cache-dependency-glob: uv.lock
       - run: uv lock --check
+      - name: Verify release orchestration
+        run: python -m unittest discover -s scripts/tests -v
       - run: uv sync --frozen
       - run: uv run --frozen python backend/manage.py check
       - name: Production deployment checks
@@ -194,3 +196,21 @@ jobs:
           path: trivy-backend.json
           if-no-files-found: ignore
           retention-days: 7
+
+  deploy-render:
+    needs: [lint-and-check, test-sqlite, test-postgresql, docker-build, security-scan]
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: production-backend
+      url: https://datapulse-backend-vkc5.onrender.com
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Deploy the checked commit and verify the live backend
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: python scripts/deploy_pipeline.py render
