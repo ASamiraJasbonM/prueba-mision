@@ -95,7 +95,7 @@ jobs:
           CHROME_BIN=$(command -v google-chrome)
           export CHROME_BIN
           npm run test:coverage
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: frontend-coverage
@@ -127,7 +127,7 @@ jobs:
       - run: npx --no-install playwright install --with-deps chromium
       - run: npm run build:e2e
       - run: npm run test:e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: e2e-browser-results
@@ -158,7 +158,7 @@ jobs:
           test -s dist/datapulse/browser/_headers
       - run: node docker/check-production.mjs
       - run: test -s dist/datapulse/browser/index.html
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: frontend-dist
           path: frontend/dist/datapulse/browser
@@ -265,7 +265,7 @@ jobs:
           output: ${{ github.workspace }}/trivy-frontend.json
       - name: Upload image vulnerability report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: frontend-trivy
           path: trivy-frontend.json

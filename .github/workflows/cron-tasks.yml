@@ -83,7 +83,7 @@ jobs:
         run: uv run --frozen --no-dev python backend/manage.py verificar_auditoria
       - name: Preserve the business result
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: maintenance-${{ matrix.task }}
           path: maintenance-report.json
