@@ -1,6 +1,8 @@
 import importlib.util
 from pathlib import Path
+from subprocess import CompletedProcess
 import unittest
+from unittest.mock import patch
 from cryptography.fernet import Fernet, InvalidToken
 
 
@@ -33,3 +35,22 @@ class BackupVerificationTests(unittest.TestCase):
         self.assertEqual(module.database_env('postgresql://u:p@127.0.0.1/db', development=True)['PGSSLMODE'], 'disable')
         with self.assertRaises(ValueError):
             module.database_env('postgresql://u:p@remote/db', development=True)
+
+    def test_restore_waits_for_the_final_tcp_listener(self):
+        module = self.module()
+        with (
+            patch.object(module.secrets, 'token_hex', return_value='test'),
+            patch.object(module, 'run', side_effect=[b'', b'true', b'127.0.0.1:54321', b'true', b'']),
+            patch.object(module.time, 'sleep') as sleep,
+            patch.object(module.subprocess, 'run', side_effect=[CompletedProcess([], 2), CompletedProcess([], 0)]) as probe,
+        ):
+            with module.isolated_database(16) as (name, url):
+                self.assertEqual(name, 'datapulse-restore-test')
+                self.assertTrue(url.endswith('@127.0.0.1:54321/restored'))
+
+        self.assertEqual(probe.call_count, 2)
+        probe.assert_called_with(
+            ['docker', 'exec', 'datapulse-restore-test', 'pg_isready', '-h', '127.0.0.1', '-U', 'postgres', '-d', 'restored'],
+            capture_output=True,
+        )
+        sleep.assert_called_once_with(1)

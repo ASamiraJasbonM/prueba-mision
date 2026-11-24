@@ -113,7 +113,11 @@ def isolated_database(major):
         '-p', '127.0.0.1::5432', f'postgres:{major}-alpine'])
     try:
         for _ in range(60):
-            result = subprocess.run(['docker', 'exec', name, 'pg_isready', '-U', 'postgres'], capture_output=True)
+            # The image starts a socket-only server before the final PostgreSQL server.
+            result = subprocess.run(
+                ['docker', 'exec', name, 'pg_isready', '-h', '127.0.0.1', '-U', 'postgres', '-d', 'restored'],
+                capture_output=True,
+            )
             if result.returncode == 0:
                 break
             if run(['docker', 'inspect', '--format', '{{.State.Running}}', name]).decode().strip() != 'true':
